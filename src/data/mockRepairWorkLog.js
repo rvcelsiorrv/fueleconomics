@@ -1,4 +1,4 @@
-/** Организации для журнала ремонта (номер + контакт). Учебные данные. */
+/** Населённые пункты журнала ремонта (номер + контакт). Учебные данные. */
 
 export const repairWorkLogOrganizations = [
   {
@@ -32,6 +32,7 @@ export const repairWorkLogInitialEntries = [
   {
     id: "rwl-mock-1",
     orgId: "rw-org-1",
+    clientLastName: "Козлов",
     transportHpfp:
       "КАМАЗ-6520, А174BC23; ТНВД Bosch CP3, инв. № 0986437398",
     startDate: "2026-02-03",
@@ -48,6 +49,7 @@ export const repairWorkLogInitialEntries = [
   {
     id: "rwl-mock-2",
     orgId: "rw-org-2",
+    clientLastName: "Морозов",
     transportHpfp: "Mercedes Sprinter 316 CDI, К555МН99; ТНВД CP3",
     startDate: "2026-02-18",
     endDate: "2026-03-01",
@@ -63,6 +65,7 @@ export const repairWorkLogInitialEntries = [
   {
     id: "rwl-mock-3",
     orgId: "rw-org-3",
+    clientLastName: "Волков",
     transportHpfp: "John Deere 6130M; насос Denso HP3",
     startDate: "2026-03-05",
     endDate: "",
@@ -75,6 +78,7 @@ export const repairWorkLogInitialEntries = [
   {
     id: "rwl-mock-4",
     orgId: "rw-org-4",
+    clientLastName: "Соколов",
     transportHpfp: "ГАЗон Next Cummins ISF, У777OK178; ТНВД Common Rail",
     startDate: "2026-03-12",
     endDate: "2026-03-20",
@@ -90,6 +94,7 @@ export const repairWorkLogInitialEntries = [
   {
     id: "rwl-mock-5",
     orgId: "rw-org-1",
+    clientLastName: "Лебедев",
     transportHpfp: "Volvo FH, Е999XX77; ТНВД Bosch",
     startDate: "2026-03-25",
     endDate: "",

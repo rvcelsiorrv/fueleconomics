@@ -610,7 +610,7 @@
 
 .trust__list {
   max-width: 1224px;
-  margin: 0 auto;
+    margin: 0 auto;
   padding: 1.5rem clamp(1rem, 3vw, 1.5rem);
   list-style: none;
   display: grid;
@@ -782,7 +782,7 @@
 }
 
 .product-card__media {
-  position: relative;
+    position: relative;
   aspect-ratio: 4 / 3;
   background: color-mix(
     in srgb,
@@ -794,7 +794,7 @@
 
 .product-card__media::after {
   content: "";
-  position: absolute;
+    position: absolute;
   inset: 0;
   background: linear-gradient(
     180deg,
@@ -814,7 +814,7 @@
   position: absolute;
   top: 0.75rem;
   left: 0.75rem;
-  z-index: 1;
+    z-index: 1;
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -996,7 +996,7 @@
   max-width: 1224px;
   margin: 0 auto;
   padding: 2.75rem clamp(1rem, 3vw, 1.5rem);
-  text-align: center;
+    text-align: center;
   animation: shop-rise 0.7s var(--shop-ease-out) 0.15s backwards;
 }
 
@@ -1134,7 +1134,7 @@
   box-shadow: var(--shop-shadow);
   pointer-events: none;
   overflow: hidden;
-  display: flex;
+    display: flex;
   align-items: stretch;
   will-change: left, top, width, height, transform;
 }
@@ -1161,7 +1161,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+    align-items: center;
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem;
@@ -1205,7 +1205,7 @@
   -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
-  justify-content: center;
+    justify-content: center;
   padding: 1.25rem;
   animation: shop-fade-in 0.35s var(--shop-ease-out) forwards;
 }
@@ -1267,7 +1267,7 @@
 
 .modal-dialog__hero {
   display: flex;
-  justify-content: center;
+      justify-content: center;
   padding: 0.5rem 2.5rem 1rem;
   margin-bottom: 0.25rem;
   border-radius: var(--shop-radius-sm);
@@ -1469,7 +1469,7 @@
   max-width: none;
   margin: 0 auto;
   padding: 1.75rem clamp(0.75rem, 2.5vw, 1.25rem) 3.25rem;
-  box-sizing: border-box;
+      box-sizing: border-box;
   word-break: normal;
   overflow-wrap: normal;
   hyphens: manual;
@@ -1629,7 +1629,7 @@
 
 .fuel-stat-card::before {
   content: "";
-  position: absolute;
+    position: absolute;
   top: 0;
   left: 0;
   right: 0;
@@ -1698,7 +1698,7 @@
 .fuel-section-title::before {
   content: "";
   position: absolute;
-  left: 0;
+    left: 0;
   top: 0.2em;
   bottom: 0.2em;
   width: 4px;
@@ -2120,6 +2120,26 @@
   margin-top: 0;
 }
 
+.repair-worklog-modal__client-field {
+  margin-top: 1rem;
+}
+
+.repair-worklog-modal__req {
+  text-decoration: none;
+  color: var(--shop-accent);
+  font-weight: 700;
+}
+
+.repair-worklog-modal__field-error {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: #b91c1c;
+}
+
+:root[data-theme="dark"] .repair-worklog-modal__field-error {
+  color: #fca5a5;
+}
+
 .repair-worklog-modal__pump-numbers {
   margin-top: 1rem;
 }
@@ -2180,12 +2200,88 @@
   white-space: nowrap;
 }
 
-.repair-worklog-table tbody tr:nth-child(even) {
-  background: color-mix(in srgb, var(--shop-surface) 18%, var(--shop-card));
+.repair-worklog-table tbody tr.repair-worklog-table__row--settlement {
+  background: color-mix(in srgb, var(--shop-surface) 24%, var(--shop-card));
+  font-weight: 600;
 }
 
-.repair-worklog-table tbody tr:hover {
-  background: color-mix(in srgb, var(--shop-surface) 42%, var(--shop-card));
+.repair-worklog-table tbody tr.repair-worklog-table__row--settlement:hover {
+  background: color-mix(in srgb, var(--shop-surface) 38%, var(--shop-card));
+}
+
+.repair-worklog-table tbody tr.repair-worklog-table__row--client {
+  background: var(--shop-card);
+  box-shadow: inset 3px 0 0
+    color-mix(in srgb, var(--shop-accent) 52%, transparent);
+}
+
+.repair-worklog-table tbody tr.repair-worklog-table__row--client:hover {
+  background: color-mix(in srgb, var(--shop-surface) 22%, var(--shop-card));
+}
+
+.repair-worklog-table__settlement-cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.repair-worklog-table__expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--shop-border);
+  border-radius: var(--shop-radius-sm);
+  background: var(--shop-card);
+  color: var(--shop-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.2s var(--shop-ease-soft),
+    border-color 0.2s var(--shop-ease-soft),
+    color 0.2s var(--shop-ease-soft);
+}
+
+.repair-worklog-table__expand-btn:hover:not(:disabled) {
+  color: var(--shop-accent);
+  border-color: color-mix(in srgb, var(--shop-accent) 35%, var(--shop-border));
+  background: color-mix(in srgb, var(--shop-accent-soft) 35%, var(--shop-card));
+}
+
+.repair-worklog-table__expand-btn--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.repair-worklog-table__chevron {
+  display: block;
+  transition: transform 0.2s var(--shop-ease-soft);
+}
+
+.repair-worklog-table__chevron--open {
+  transform: rotate(180deg);
+}
+
+.repair-worklog-table__client-count {
+  font-size: 0.78em;
+  font-weight: 500;
+  color: var(--shop-muted);
+}
+
+.repair-worklog-table__cell-muted {
+  color: var(--shop-muted);
+}
+
+.repair-worklog-table__cell-sub {
+  border-bottom: 1px solid var(--shop-border);
+}
+
+.repair-worklog-table__client-name {
+  font-weight: 600;
 }
 
 .repair-worklog-table tbody tr:last-child td {
@@ -2336,7 +2432,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
+    right: 0;
   height: 2px;
   background: linear-gradient(
     90deg,
