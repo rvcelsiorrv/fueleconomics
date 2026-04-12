@@ -1240,6 +1240,11 @@
   max-height: min(90vh, 780px);
 }
 
+.modal-dialog--worklog-org {
+  width: min(440px, 100%);
+  max-height: min(88vh, 640px);
+}
+
 .modal-close {
   position: absolute;
   top: 0.75rem;
@@ -1904,6 +1909,10 @@
   margin-bottom: 1.1rem;
 }
 
+.modal-backdrop--worklog-org {
+  z-index: 100;
+}
+
 .repair-worklog-list {
   display: flex;
   flex-direction: column;
@@ -2079,6 +2088,27 @@
   box-shadow: 0 0 0 2px var(--shop-accent-soft);
 }
 
+/* Числовые поля: табличные цифры; стрелки шага не прячем (Chromium / Safari / Edge) */
+input[type="number"].repair-worklog-card__input,
+input[type="number"].hpfp-add-number__input {
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="number"].repair-worklog-card__input::-webkit-inner-spin-button,
+input[type="number"].repair-worklog-card__input::-webkit-outer-spin-button,
+input[type="number"].hpfp-add-number__input::-webkit-inner-spin-button,
+input[type="number"].hpfp-add-number__input::-webkit-outer-spin-button {
+  opacity: 1;
+  height: 2.25rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+:root[data-theme="dark"] input[type="number"].repair-worklog-card__input,
+:root[data-theme="dark"] input[type="number"].hpfp-add-number__input {
+  color-scheme: dark;
+}
+
 .repair-worklog-card__dates {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2132,6 +2162,45 @@
   margin-top: 0;
 }
 
+.repair-worklog-modal__org-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 1.25rem;
+}
+
+.repair-worklog-modal__org-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+}
+
+.repair-worklog-modal__org-controls .repair-worklog-card__select {
+  flex: 1 1 min(12rem, 100%);
+  min-width: 0;
+}
+
+.repair-worklog-modal__add-org-btn {
+  flex-shrink: 0;
+}
+
+.repair-worklog-modal__works-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.35rem;
+}
+
+@media (min-width: 640px) {
+  .repair-worklog-modal__works-parts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 1rem 1.25rem;
+  }
+}
+
 .repair-worklog-modal__client-field {
   margin-top: 1rem;
 }
@@ -2148,6 +2217,13 @@
   color: #b91c1c;
 }
 
+.repair-worklog-modal__field-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--shop-muted);
+}
+
 :root[data-theme="dark"] .repair-worklog-modal__field-error {
   color: #fca5a5;
 }
@@ -2158,6 +2234,74 @@
 
 .repair-worklog-modal__pump-list {
   margin: 0.45rem 0 0.35rem;
+}
+
+.repair-worklog-modal__parts-block {
+  margin-top: 0.75rem;
+}
+
+.repair-worklog-modal__parts-list {
+  margin: 0.35rem 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.repair-worklog-modal__parts-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--shop-border) 75%, transparent);
+}
+
+.repair-worklog-modal__parts-item:last-child {
+  border-bottom: none;
+}
+
+.repair-worklog-modal__parts-item--param .repair-worklog-modal__parts-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.repair-worklog-modal__parts-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.repair-worklog-modal__parts-qty {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--shop-muted);
+  flex-shrink: 0;
+}
+
+.repair-worklog-modal__add-part {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.repair-worklog-modal__add-part .repair-worklog-card__input {
+  flex: 1;
+  min-width: min(12rem, 100%);
+}
+
+.repair-worklog-modal__add-part--param .repair-worklog-card__input {
+  flex: 1;
+  min-width: min(14rem, 100%);
+}
+
+.repair-worklog-modal__part-qty {
+  width: auto;
+  min-width: 5rem;
+  max-width: 6.5rem;
+  flex-shrink: 0;
+  padding-inline: 0.55rem 0.35rem;
+  text-align: start;
 }
 
 .repair-worklog-modal-actions {
@@ -2242,11 +2386,43 @@
   color: var(--shop-text);
 }
 
+.repair-worklog-table__hpfp-type {
+  min-width: min(11rem, 100%);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--shop-text);
+}
+
+.repair-worklog-table__pump-numbers {
+  min-width: min(10rem, 100%);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--shop-text);
+  font-variant-numeric: tabular-nums;
+}
+
 .repair-worklog-table__works {
   min-width: min(12rem, 100%);
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--shop-text);
+}
+
+.repair-worklog-table__cell-list {
+  margin: 0;
+  padding-left: 1.15em;
+  list-style: disc;
+  text-align: left;
+}
+
+.repair-worklog-table__cell-list li {
+  margin: 0.2em 0;
+  line-height: 1.4;
+}
+
+.repair-worklog-table__cell-qty {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .repair-worklog-table__hpfp-params {
@@ -2350,6 +2526,10 @@
     auto-fit,
     minmax(min(100%, 260px), 1fr)
   );
+}
+
+.hpfp-org-cards .repair-worklog-empty--orgs {
+  grid-column: 1 / -1;
 }
 
 .hpfp-org-card {
@@ -2725,13 +2905,14 @@
 .hpfp-add-number__input {
   flex: 1 1 120px;
   min-width: 100px;
-  padding: 0.45rem 0.6rem;
+  padding: 0.45rem 0.5rem 0.45rem 0.6rem;
   border-radius: var(--shop-radius-sm);
   border: 1px solid var(--shop-border);
   background: var(--shop-card);
   color: var(--shop-text);
   font: inherit;
   font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .hpfp-add-number__input:focus {
