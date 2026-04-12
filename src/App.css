@@ -18,7 +18,9 @@
 
   font-family: var(--shop-font);
   color: var(--shop-text);
+  width: 100%;
   min-height: 100%;
+  box-sizing: border-box;
   background: var(--bg);
   background-image: radial-gradient(
     ellipse 120% 80% at 50% -30%,
@@ -84,9 +86,11 @@
 }
 
 .header__inner {
-  max-width: 1224px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
-  padding: 0.85rem clamp(1rem, 3vw, 1.5rem);
+  padding: 0.85rem clamp(0.75rem, 2.5vw, 1.25rem);
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: auto 1fr auto;
   grid-template-areas:
@@ -1461,9 +1465,11 @@
 }
 
 .fuel-page {
-  max-width: 1224px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
-  padding: 1.75rem clamp(1rem, 3vw, 1.5rem) 3.25rem;
+  padding: 1.75rem clamp(0.75rem, 2.5vw, 1.25rem) 3.25rem;
+  box-sizing: border-box;
   word-break: normal;
   overflow-wrap: normal;
   hyphens: manual;
@@ -2114,6 +2120,14 @@
   margin-top: 0;
 }
 
+.repair-worklog-modal__pump-numbers {
+  margin-top: 1rem;
+}
+
+.repair-worklog-modal__pump-list {
+  margin: 0.45rem 0 0.35rem;
+}
+
 .repair-worklog-modal-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2189,36 +2203,89 @@
   font-variant-numeric: tabular-nums;
 }
 
-.repair-worklog-table__works {
-  max-width: 16rem;
+.repair-worklog-table__fuel-system {
+  min-width: min(14rem, 100%);
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--shop-text);
 }
 
-.repair-worklog-table__delete {
-  padding: 0.35rem 0.6rem;
-  font-size: 0.76rem;
-  font-weight: 500;
-  font: inherit;
-  border-radius: var(--shop-radius-xs);
-  border: 1px solid color-mix(in srgb, var(--shop-border) 80%, #dc2626 22%);
+.repair-worklog-table__works {
+  min-width: min(12rem, 100%);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--shop-text);
+}
+
+.repair-worklog-table__remark {
+  min-width: min(10rem, 100%);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--shop-muted);
+}
+
+.repair-worklog-modal__remark {
+  margin-top: 0.15rem;
+}
+
+.repair-worklog-card__textarea--remark {
+  min-height: 4.5rem;
+}
+
+.repair-worklog-table__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.repair-worklog-table__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--shop-radius-sm);
+  border: 1px solid var(--shop-border);
   background: var(--shop-card);
-  color: #b91c1c;
+  color: var(--shop-muted);
   cursor: pointer;
-  white-space: nowrap;
   transition:
     background 0.2s var(--shop-ease-soft),
-    border-color 0.2s var(--shop-ease-soft);
+    border-color 0.2s var(--shop-ease-soft),
+    color 0.2s var(--shop-ease-soft);
 }
 
-.repair-worklog-table__delete:hover {
-  background: color-mix(in srgb, #dc2626 8%, var(--shop-card));
+.repair-worklog-table__icon {
+  display: block;
+  flex-shrink: 0;
 }
 
-:root[data-theme="dark"] .repair-worklog-table__delete {
+.repair-worklog-table__icon-btn--edit:hover {
+  color: var(--shop-accent);
+  border-color: color-mix(in srgb, var(--shop-accent) 35%, var(--shop-border));
+  background: color-mix(in srgb, var(--shop-accent-soft) 40%, var(--shop-card));
+}
+
+.repair-worklog-table__icon-btn--delete {
+  color: #b91c1c;
+  border-color: color-mix(in srgb, var(--shop-border) 75%, #dc2626 25%);
+}
+
+.repair-worklog-table__icon-btn--delete:hover {
+  background: color-mix(in srgb, #dc2626 10%, var(--shop-card));
+  border-color: color-mix(in srgb, #dc2626 40%, var(--shop-border));
+  color: #991b1b;
+}
+
+:root[data-theme="dark"] .repair-worklog-table__icon-btn--delete {
   color: #fca5a5;
   border-color: color-mix(in srgb, #dc2626 45%, var(--shop-border));
+}
+
+:root[data-theme="dark"] .repair-worklog-table__icon-btn--delete:hover {
+  color: #fecaca;
 }
 
 @media (max-width: 900px) {
@@ -2664,7 +2731,7 @@
 
 @media (max-width: 640px) {
   .fuel-page {
-    padding: 1.2rem clamp(0.8rem, 4vw, 1.15rem) 2.35rem;
+    padding: 1.2rem clamp(0.65rem, 3.5vw, 1rem) 2.35rem;
   }
 
   .fuel-page__intro {

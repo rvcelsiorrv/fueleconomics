@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  fuelBySystemType,
-  fuelFleetSummary,
-  fuelVehicles,
-} from "../data/mockFuelFleet";
+import { fuelVehicles } from "../data/mockFuelFleet";
 import {
   hpfpOrganizations,
   hpfpRepairsInitial,
@@ -32,13 +28,16 @@ function formatDateRu(iso) {
   return `${d}.${m}.${y}`;
 }
 
-function emptyWorkLogDraft() {
+function makeEmptyWorkLogDraft(orgId) {
   return {
-    orgId: repairWorkLogOrganizations[0].id,
+    orgId,
     transportHpfp: "",
     startDate: "",
     endDate: "",
     completedWorks: "",
+    remark: "",
+    installedParts: [],
+    pumpNumbers: [],
   };
 }
 
@@ -68,32 +67,55 @@ export default function FuelSystemsPage() {
   const [partDrafts, setPartDrafts] = useState({});
   const [orgFilter, setOrgFilter] = useState("all");
 
+  const [workLogOrganizations, setWorkLogOrganizations] = useState(() =>
+    repairWorkLogOrganizations.map((o) => ({ ...o })),
+  );
+
   const workLogOrgById = useMemo(
     () =>
-      Object.fromEntries(repairWorkLogOrganizations.map((o) => [o.id, o])),
-    [],
+      Object.fromEntries(workLogOrganizations.map((o) => [o.id, o])),
+    [workLogOrganizations],
   );
 
   const [workLogEntries, setWorkLogEntries] = useState(() =>
-    repairWorkLogInitialEntries.map((e) => ({ ...e })),
+    repairWorkLogInitialEntries.map((e) => ({
+      ...e,
+      remark: e.remark ?? "",
+      installedParts: (e.installedParts ?? []).map((p) => ({ ...p })),
+      pumpNumbers: [...(e.pumpNumbers ?? [])],
+    })),
   );
 
   const [workLogModalOpen, setWorkLogModalOpen] = useState(false);
-  const [workLogDraft, setWorkLogDraft] = useState(emptyWorkLogDraft);
+  const [workLogAddOrgModalOpen, setWorkLogAddOrgModalOpen] = useState(false);
+  const [workLogNewOrg, setWorkLogNewOrg] = useState({
+    shortName: "",
+    phone: "",
+  });
+  const [workLogEditingId, setWorkLogEditingId] = useState(null);
+  const [workLogDraft, setWorkLogDraft] = useState(() =>
+    makeEmptyWorkLogDraft(repairWorkLogOrganizations[0].id),
+  );
+  const [workLogPartDraft, setWorkLogPartDraft] = useState({
+    name: "",
+    qty: "1",
+  });
+  const [workLogPumpInput, setWorkLogPumpInput] = useState("");
 
   useEffect(() => {
     if (!workLogModalOpen) return;
     const onKey = (e) => {
-      if (e.key === "Escape") setWorkLogModalOpen(false);
+      if (e.key !== "Escape") return;
+      if (workLogAddOrgModalOpen) {
+        setWorkLogAddOrgModalOpen(false);
+      } else {
+        setWorkLogModalOpen(false);
+        setWorkLogEditingId(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [workLogModalOpen]);
-
-  const maxLiters = useMemo(
-    () => Math.max(...fuelBySystemType.map((s) => s.litersMonth), 1),
-    [],
-  );
+  }, [workLogModalOpen, workLogAddOrgModalOpen]);
 
   const orgById = useMemo(
     () => Object.fromEntries(hpfpOrganizations.map((o) => [o.id, o])),
@@ -105,18 +127,25 @@ export default function FuelSystemsPage() {
     return hpfpRepairs.filter((r) => r.orgId === orgFilter);
   }, [hpfpRepairs, orgFilter]);
 
-  const orgStats = useMemo(() => {
-    return hpfpOrganizations.map((o) => ({
-      ...o,
-      repairsCount: hpfpRepairs.filter((r) => r.orgId === o.id).length,
-      pumpsNumbered: hpfpRepairs
-        .filter((r) => r.orgId === o.id)
-        .reduce((s, r) => s + r.numbers.length, 0),
-      partsCount: hpfpRepairs
-        .filter((r) => r.orgId === o.id)
-        .reduce((s, r) => s + r.installedParts.length, 0),
-    }));
-  }, [hpfpRepairs]);
+  const workLogOrgStats = useMemo(() => {
+    return workLogOrganizations.map((o) => {
+      const uniquePump = new Set();
+      let applicationsCount = 0;
+      for (const e of workLogEntries) {
+        if (e.orgId !== o.id) continue;
+        applicationsCount += 1;
+        for (const n of e.pumpNumbers ?? []) {
+          const t = String(n).trim();
+          if (t) uniquePump.add(t);
+        }
+      }
+      return {
+        ...o,
+        applicationsCount,
+        uniquePumpNumbersCount: uniquePump.size,
+      };
+    });
+  }, [workLogOrganizations, workLogEntries]);
 
   const setInput = (repairId, value) => {
     setHpfpInputs((prev) => ({ ...prev, [repairId]: value }));
@@ -186,24 +215,127 @@ export default function FuelSystemsPage() {
   };
 
   const openWorkLogModal = () => {
-    setWorkLogDraft(emptyWorkLogDraft());
+    const firstId = workLogOrganizations[0]?.id;
+    if (!firstId) return;
+    setWorkLogEditingId(null);
+    setWorkLogAddOrgModalOpen(false);
+    setWorkLogDraft(makeEmptyWorkLogDraft(firstId));
+    setWorkLogPartDraft({ name: "", qty: "1" });
+    setWorkLogPumpInput("");
     setWorkLogModalOpen(true);
   };
 
-  const closeWorkLogModal = () => setWorkLogModalOpen(false);
+  const openWorkLogEditModal = (entry) => {
+    setWorkLogEditingId(entry.id);
+    setWorkLogAddOrgModalOpen(false);
+    setWorkLogDraft({
+      orgId: entry.orgId,
+      transportHpfp: entry.transportHpfp,
+      startDate: entry.startDate,
+      endDate: entry.endDate,
+      completedWorks: entry.completedWorks,
+      remark: entry.remark ?? "",
+      installedParts: (entry.installedParts ?? []).map((p) => ({ ...p })),
+      pumpNumbers: [...(entry.pumpNumbers ?? [])],
+    });
+    setWorkLogPartDraft({ name: "", qty: "1" });
+    setWorkLogPumpInput("");
+    setWorkLogModalOpen(true);
+  };
+
+  const closeWorkLogModal = () => {
+    setWorkLogModalOpen(false);
+    setWorkLogEditingId(null);
+    setWorkLogAddOrgModalOpen(false);
+    setWorkLogNewOrg({ shortName: "", phone: "" });
+    setWorkLogPumpInput("");
+  };
+
+  const addWorkLogDraftPumpNumber = () => {
+    const raw = workLogPumpInput.trim();
+    if (!raw) return;
+    setWorkLogDraft((d) => ({
+      ...d,
+      pumpNumbers: [...(d.pumpNumbers ?? []), raw],
+    }));
+    setWorkLogPumpInput("");
+  };
+
+  const removeWorkLogDraftPumpNumber = (index) => {
+    setWorkLogDraft((d) => ({
+      ...d,
+      pumpNumbers: (d.pumpNumbers ?? []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const openWorkLogAddOrgModal = () => {
+    setWorkLogNewOrg({ shortName: "", phone: "" });
+    setWorkLogAddOrgModalOpen(true);
+  };
+
+  const closeWorkLogAddOrgModal = () => {
+    setWorkLogAddOrgModalOpen(false);
+    setWorkLogNewOrg({ shortName: "", phone: "" });
+  };
+
+  const submitWorkLogNewOrg = () => {
+    const shortName = workLogNewOrg.shortName.trim();
+    const phone = workLogNewOrg.phone.trim();
+    if (!shortName || !phone) return;
+    const nextNum =
+      workLogOrganizations.length === 0
+        ? 1
+        : Math.max(...workLogOrganizations.map((o) => o.number)) + 1;
+    const newOrg = {
+      id: `rw-org-${Date.now()}`,
+      number: nextNum,
+      shortName,
+      phone,
+    };
+    setWorkLogOrganizations((prev) => [...prev, newOrg]);
+    setWorkLogDraft((d) => ({ ...d, orgId: newOrg.id }));
+    closeWorkLogAddOrgModal();
+  };
+
+  const addWorkLogDraftPart = () => {
+    const name = workLogPartDraft.name.trim();
+    if (!name) return;
+    const qty = Math.max(1, parseInt(String(workLogPartDraft.qty), 10) || 1);
+    const id = `wlp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setWorkLogDraft((d) => ({
+      ...d,
+      installedParts: [...(d.installedParts ?? []), { id, name, qty }],
+    }));
+    setWorkLogPartDraft({ name: "", qty: "1" });
+  };
+
+  const removeWorkLogDraftPart = (partId) => {
+    setWorkLogDraft((d) => ({
+      ...d,
+      installedParts: (d.installedParts ?? []).filter((p) => p.id !== partId),
+    }));
+  };
 
   const setWorkLogDraftField = (field, value) => {
     setWorkLogDraft((d) => ({ ...d, [field]: value }));
   };
 
   const submitWorkLogFromModal = () => {
-    setWorkLogEntries((rows) => [
-      ...rows,
-      {
-        id: makeRepairWorkLogId(),
-        ...workLogDraft,
-      },
-    ]);
+    if (workLogEditingId) {
+      setWorkLogEntries((rows) =>
+        rows.map((r) =>
+          r.id === workLogEditingId ? { ...r, ...workLogDraft } : r,
+        ),
+      );
+    } else {
+      setWorkLogEntries((rows) => [
+        ...rows,
+        {
+          id: makeRepairWorkLogId(),
+          ...workLogDraft,
+        },
+      ]);
+    }
     closeWorkLogModal();
   };
 
@@ -224,85 +356,10 @@ export default function FuelSystemsPage() {
           Топливные системы, расход и&nbsp;ТНВД
         </h1>
         <p className="fuel-page__lead">
-          Сводка по автопарку, типам впрыска и&nbsp;ГБО, учёт заявок
-          на&nbsp;ремонт ТНВД по&nbsp;организациям и журнал выполненных работ.
-          Период: <strong>{fuelFleetSummary.periodLabel}</strong>.
+          Учёт заявок на&nbsp;ремонт ТНВД по&nbsp;организациям, журнал работ,
+          карточки контрагентов и&nbsp;таблица автопарка (демо-данные).
         </p>
       </header>
-
-      <section className="fuel-stats" aria-label="Ключевые показатели">
-        <div className="fuel-stats__grid">
-          <article className="fuel-stat-card">
-            <span className="fuel-stat-card__label">Единиц в парке</span>
-            <span className="fuel-stat-card__value">
-              {fuelFleetSummary.totalVehicles}
-            </span>
-          </article>
-          <article className="fuel-stat-card">
-            <span className="fuel-stat-card__label">
-              Заправлено за месяц, л
-            </span>
-            <span className="fuel-stat-card__value">
-              {formatNum(fuelFleetSummary.totalFuelLiters)}
-            </span>
-          </article>
-          <article className="fuel-stat-card">
-            <span className="fuel-stat-card__label">Затраты за месяц</span>
-            <span className="fuel-stat-card__value fuel-stat-card__value--sm">
-              {formatMoney(fuelFleetSummary.totalSpentRub)}
-            </span>
-          </article>
-          <article className="fuel-stat-card">
-            <span className="fuel-stat-card__label">
-              Средний расход (парк), л/&nbsp;100&nbsp;км
-            </span>
-            <span className="fuel-stat-card__value">
-              {formatNum(fuelFleetSummary.avgConsumptionL100)}
-            </span>
-          </article>
-        </div>
-      </section>
-
-      <section
-        className="fuel-breakdown"
-        aria-labelledby="fuel-breakdown-title"
-      >
-        <h2 id="fuel-breakdown-title" className="fuel-section-title">
-          Расход по типам топливных систем
-        </h2>
-        <p className="fuel-section-desc">
-          Доля заправок в литрах (эквивалент) по&nbsp;классификации систем
-          питания двигателя.
-        </p>
-        <ul className="fuel-bars">
-          {fuelBySystemType.map((row) => (
-            <li key={row.id} className="fuel-bars__item">
-              <div className="fuel-bars__head">
-                <span className="fuel-bars__label">{row.label}</span>
-                <span className="fuel-bars__meta">
-                  {row.vehicles}&nbsp;а/м · {formatNum(row.litersMonth)}&nbsp;л
-                </span>
-              </div>
-              <div
-                className="fuel-bars__track"
-                role="presentation"
-                aria-hidden="true"
-              >
-                <div
-                  className="fuel-bars__fill"
-                  style={{
-                    width: `${(row.litersMonth / maxLiters) * 100}%`,
-                    "--bar-h": `${row.colorHue}`,
-                  }}
-                />
-              </div>
-              <span className="fuel-bars__pct">
-                {row.sharePct}%&nbsp;парка
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
 
       <section
         className="hpfp-orgs-section"
@@ -312,27 +369,25 @@ export default function FuelSystemsPage() {
           Учёт по организациям
         </h2>
         <p className="fuel-section-desc">
-          Контрагенты, сдавшие ТНВД в&nbsp;ремонт: заявки, номера насосов
-          и&nbsp;позиции установленных запчастей.
+          Организации из журнала ремонта: число заявок по журналу и
+          количество уникальных номеров ТНВД (один номер в нескольких заявках
+          считается один раз).
         </p>
         <div className="hpfp-org-cards">
-          {orgStats.map((o) => (
+          {workLogOrgStats.map((o) => (
             <article key={o.id} className="hpfp-org-card">
-              <h3 className="hpfp-org-card__name">{o.shortName}</h3>
-              <p className="hpfp-org-card__full">{o.name}</p>
-              <p className="hpfp-org-card__inn">ИНН {o.inn}</p>
+              <h3 className="hpfp-org-card__name">
+                №{o.number} — {o.shortName}
+              </h3>
+              <p className="hpfp-org-card__inn">Тел. {o.phone}</p>
               <dl className="hpfp-org-card__stats">
                 <div>
                   <dt>Заявок</dt>
-                  <dd>{o.repairsCount}</dd>
+                  <dd>{o.applicationsCount}</dd>
                 </div>
                 <div>
                   <dt>Номеров&nbsp;ТНВД</dt>
-                  <dd>{o.pumpsNumbered}</dd>
-                </div>
-                <div>
-                  <dt>Запчастей учтено</dt>
-                  <dd>{o.partsCount}</dd>
+                  <dd>{o.uniquePumpNumbersCount}</dd>
                 </div>
               </dl>
             </article>
@@ -348,9 +403,10 @@ export default function FuelSystemsPage() {
           Журнал ремонта топливных систем
         </h2>
         <p className="fuel-section-desc">
-          Записи ведутся в таблице; новая карточка добавляется через форму
-          в&nbsp;модальном окне (организация с&nbsp;номером, телефон, привязка
-          к транспорту и&nbsp;ТНВД, даты, перечень работ).
+          Записи в таблице; карточка добавляется через форму (организацию
+          можно выбрать или добавить в отдельном окне с&nbsp;названием
+          и&nbsp;телефоном, затем привязка к транспорту и&nbsp;ТНВД, даты,
+          работы, запчасти и&nbsp;примечание).
         </p>
         <div className="repair-worklog-toolbar">
           <button
@@ -378,6 +434,8 @@ export default function FuelSystemsPage() {
                   <th scope="col">Начало</th>
                   <th scope="col">Окончание</th>
                   <th scope="col">Выполненные работы</th>
+                  <th scope="col">Установленные запчасти</th>
+                  <th scope="col">Примечание</th>
                   <th scope="col">
                     <span className="visually-hidden">Действия</span>
                   </th>
@@ -387,14 +445,18 @@ export default function FuelSystemsPage() {
                 {workLogEntries.map((entry, index) => {
                   const org = workLogOrgById[entry.orgId];
                   const tel = org ? phoneToTelHref(org.phone) : undefined;
-                  const fuelSummary = [
-                    `Орг. №${org?.number ?? "—"} (${org?.shortName ?? "—"})`,
-                    entry.transportHpfp.trim() || null,
-                  ]
-                    .filter(Boolean)
-                    .join(". ");
+                  const fuelSystemOnly =
+                    entry.transportHpfp.trim() || "—";
                   const works =
                     entry.completedWorks.trim() || "—";
+                  const remarkText =
+                    (entry.remark ?? "").trim() || "—";
+                  const partsText =
+                    entry.installedParts?.length > 0
+                      ? entry.installedParts
+                          .map((p) => `${p.name} ×${p.qty}`)
+                          .join("; ")
+                      : "—";
                   return (
                     <tr key={entry.id}>
                       <td>{index + 1}</td>
@@ -408,7 +470,9 @@ export default function FuelSystemsPage() {
                           (org?.phone ?? "—")
                         )}
                       </td>
-                      <td>{fuelSummary}</td>
+                      <td className="repair-worklog-table__fuel-system">
+                        {fuelSystemOnly}
+                      </td>
                       <td className="repair-worklog-table__date">
                         {formatDateRu(entry.startDate)}
                       </td>
@@ -416,14 +480,59 @@ export default function FuelSystemsPage() {
                         {formatDateRu(entry.endDate)}
                       </td>
                       <td className="repair-worklog-table__works">{works}</td>
-                      <td>
+                      <td className="repair-worklog-table__parts">{partsText}</td>
+                      <td className="repair-worklog-table__remark">
+                        {remarkText}
+                      </td>
+                      <td className="repair-worklog-table__actions">
                         <button
                           type="button"
-                          className="repair-worklog-table__delete"
+                          className="repair-worklog-table__icon-btn repair-worklog-table__icon-btn--edit"
+                          onClick={() => openWorkLogEditModal(entry)}
+                          aria-label={`Редактировать запись ${index + 1}`}
+                          title="Редактировать"
+                        >
+                          <svg
+                            className="repair-worklog-table__icon"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          className="repair-worklog-table__icon-btn repair-worklog-table__icon-btn--delete"
                           onClick={() => removeWorkLogEntry(entry.id)}
                           aria-label={`Удалить запись ${index + 1}`}
+                          title="Удалить"
                         >
-                          Удалить
+                          <svg
+                            className="repair-worklog-table__icon"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
+                          </svg>
                         </button>
                       </td>
                     </tr>
@@ -663,7 +772,10 @@ export default function FuelSystemsPage() {
         <div
           className="modal-backdrop"
           role="presentation"
-          onClick={closeWorkLogModal}
+          onClick={() => {
+            if (workLogAddOrgModalOpen) closeWorkLogAddOrgModal();
+            else closeWorkLogModal();
+          }}
         >
           <div
             className="modal-dialog modal-dialog--worklog"
@@ -679,35 +791,47 @@ export default function FuelSystemsPage() {
               onClick={closeWorkLogModal}
             />
             <h2 id="worklog-modal-title" className="modal-dialog__title">
-              Новая карточка ремонта
+              {workLogEditingId
+                ? "Редактирование карточки"
+                : "Новая карточка ремонта"}
             </h2>
             <p className="modal-dialog__desc repair-worklog-modal__intro">
-              Заполните поля и&nbsp;нажмите «Добавить в журнал» — запись
-              появится в таблице ниже.
+              {workLogEditingId
+                ? "Измените поля и&nbsp;нажмите «Сохранить»."
+                : "Заполните поля и&nbsp;нажмите «Добавить в журнал» — запись появится в таблице."}
             </p>
 
-            <div className="repair-worklog-card__head repair-worklog-modal__head">
-              <div className="repair-worklog-card__org-field">
+            <div className="repair-worklog-card__head repair-worklog-modal__head repair-worklog-modal__org-row">
+              <div className="repair-worklog-card__org-field repair-worklog-modal__org-select-wrap">
                 <label
                   htmlFor="worklog-modal-org"
                   className="repair-worklog-card__org-label"
                 >
                   Организация
                 </label>
-                <select
-                  id="worklog-modal-org"
-                  className="repair-worklog-card__select"
-                  value={workLogDraft.orgId}
-                  onChange={(e) =>
-                    setWorkLogDraftField("orgId", e.target.value)
-                  }
-                >
-                  {repairWorkLogOrganizations.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      №{o.number} — {o.shortName}
-                    </option>
-                  ))}
-                </select>
+                <div className="repair-worklog-modal__org-controls">
+                  <select
+                    id="worklog-modal-org"
+                    className="repair-worklog-card__select"
+                    value={workLogDraft.orgId}
+                    onChange={(e) =>
+                      setWorkLogDraftField("orgId", e.target.value)
+                    }
+                  >
+                    {workLogOrganizations.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        №{o.number} — {o.shortName}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn--secondary repair-worklog-modal__add-org-btn"
+                    onClick={openWorkLogAddOrgModal}
+                  >
+                    Добавить организацию
+                  </button>
+                </div>
               </div>
               <div className="repair-worklog-card__phone">
                 <span className="repair-worklog-card__phone-label">
@@ -750,6 +874,53 @@ export default function FuelSystemsPage() {
               />
             </div>
 
+            <div className="repair-worklog-modal__pump-numbers">
+              <span className="repair-worklog-card__field-label">
+                Номера ТНВД (для учёта по организации)
+              </span>
+              <ol className="hpfp-number-list repair-worklog-modal__pump-list">
+                {(workLogDraft.pumpNumbers ?? []).map((num, idx) => (
+                  <li
+                    key={`pump-${idx}-${num}`}
+                    className="hpfp-number-list__item"
+                  >
+                    <span className="hpfp-number-list__value">{num}</span>
+                    <button
+                      type="button"
+                      className="hpfp-number-remove"
+                      aria-label={`Удалить номер ${num}`}
+                      onClick={() => removeWorkLogDraftPumpNumber(idx)}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              <div className="hpfp-add-number">
+                <input
+                  type="text"
+                  className="hpfp-add-number__input"
+                  placeholder="Номер насоса / ТНВД"
+                  value={workLogPumpInput}
+                  onChange={(e) => setWorkLogPumpInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addWorkLogDraftPumpNumber();
+                    }
+                  }}
+                  aria-label="Добавить номер ТНВД"
+                />
+                <button
+                  type="button"
+                  className="btn btn--secondary hpfp-add-number__btn"
+                  onClick={addWorkLogDraftPumpNumber}
+                >
+                  Добавить номер
+                </button>
+              </div>
+            </div>
+
             <div className="repair-worklog-card__dates">
               <div>
                 <label
@@ -787,22 +958,110 @@ export default function FuelSystemsPage() {
               </div>
             </div>
 
-            <div className="repair-worklog-card__works">
+            <div className="repair-worklog-modal__works-parts">
+              <div className="repair-worklog-card__works">
+                <label
+                  htmlFor="worklog-modal-works"
+                  className="repair-worklog-card__field-label"
+                >
+                  Перечень выполненных работ
+                </label>
+                <textarea
+                  id="worklog-modal-works"
+                  className="repair-worklog-card__textarea"
+                  placeholder="Опишите выполненные работы…"
+                  value={workLogDraft.completedWorks}
+                  onChange={(e) =>
+                    setWorkLogDraftField("completedWorks", e.target.value)
+                  }
+                  rows={5}
+                />
+              </div>
+              <div className="repair-worklog-modal__parts-block">
+                <span className="repair-worklog-card__field-label">
+                  Установленные запчасти
+                </span>
+                <ul className="repair-worklog-modal__parts-list">
+                  {(workLogDraft.installedParts ?? []).map((p) => (
+                    <li key={p.id} className="repair-worklog-modal__parts-item">
+                      <span className="repair-worklog-modal__parts-name">
+                        {p.name}
+                      </span>
+                      <span className="repair-worklog-modal__parts-qty">
+                        ×{p.qty}
+                      </span>
+                      <button
+                        type="button"
+                        className="hpfp-number-remove"
+                        aria-label={`Удалить запчасть ${p.name}`}
+                        onClick={() => removeWorkLogDraftPart(p.id)}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <div className="repair-worklog-modal__add-part">
+                  <input
+                    type="text"
+                    className="repair-worklog-card__input"
+                    placeholder="Наименование запчасти"
+                    value={workLogPartDraft.name}
+                    onChange={(e) =>
+                      setWorkLogPartDraft((x) => ({
+                        ...x,
+                        name: e.target.value,
+                      }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addWorkLogDraftPart();
+                      }
+                    }}
+                    aria-label="Наименование запчасти"
+                  />
+                  <input
+                    type="number"
+                    min={1}
+                    className="repair-worklog-modal__part-qty"
+                    title="Количество"
+                    value={workLogPartDraft.qty}
+                    onChange={(e) =>
+                      setWorkLogPartDraft((x) => ({
+                        ...x,
+                        qty: e.target.value,
+                      }))
+                    }
+                    aria-label="Количество"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn--secondary"
+                    onClick={addWorkLogDraftPart}
+                  >
+                    Добавить
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="repair-worklog-card__works repair-worklog-modal__remark">
               <label
-                htmlFor="worklog-modal-works"
+                htmlFor="worklog-modal-remark"
                 className="repair-worklog-card__field-label"
               >
-                Перечень выполненных работ
+                Примечание
               </label>
               <textarea
-                id="worklog-modal-works"
-                className="repair-worklog-card__textarea"
-                placeholder="Опишите выполненные работы…"
-                value={workLogDraft.completedWorks}
+                id="worklog-modal-remark"
+                className="repair-worklog-card__textarea repair-worklog-card__textarea--remark"
+                placeholder="Дополнительные пометки, сроки, согласования…"
+                value={workLogDraft.remark}
                 onChange={(e) =>
-                  setWorkLogDraftField("completedWorks", e.target.value)
+                  setWorkLogDraftField("remark", e.target.value)
                 }
-                rows={5}
+                rows={3}
               />
             </div>
 
@@ -819,9 +1078,107 @@ export default function FuelSystemsPage() {
                 className="btn btn--primary"
                 onClick={submitWorkLogFromModal}
               >
-                Добавить в журнал
+                {workLogEditingId ? "Сохранить" : "Добавить в журнал"}
               </button>
             </div>
+
+            {workLogAddOrgModalOpen ? (
+              <div
+                className="modal-backdrop modal-backdrop--nested"
+                role="presentation"
+                onClick={closeWorkLogAddOrgModal}
+              >
+                <div
+                  className="modal-dialog modal-dialog--worklog-org"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="worklog-add-org-title"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className="modal-close"
+                    aria-label="Закрыть"
+                    onClick={closeWorkLogAddOrgModal}
+                  />
+                  <h2
+                    id="worklog-add-org-title"
+                    className="modal-dialog__title"
+                  >
+                    Новая организация
+                  </h2>
+                  <p className="modal-dialog__desc repair-worklog-modal__intro">
+                    Укажите наименование и&nbsp;номер телефона. Организация
+                    получит следующий порядковый номер и&nbsp;сразу будет
+                    выбрана в карточке.
+                  </p>
+                  <div>
+                    <label
+                      htmlFor="worklog-new-org-name"
+                      className="repair-worklog-card__field-label"
+                    >
+                      Наименование организации
+                    </label>
+                    <input
+                      id="worklog-new-org-name"
+                      type="text"
+                      className="repair-worklog-card__input"
+                      placeholder="Например: ООО «Рога и копыта»"
+                      value={workLogNewOrg.shortName}
+                      onChange={(e) =>
+                        setWorkLogNewOrg((x) => ({
+                          ...x,
+                          shortName: e.target.value,
+                        }))
+                      }
+                      autoComplete="organization"
+                    />
+                  </div>
+                  <div className="repair-worklog-modal__new-org-phone">
+                    <label
+                      htmlFor="worklog-new-org-phone"
+                      className="repair-worklog-card__field-label"
+                    >
+                      Телефон
+                    </label>
+                    <input
+                      id="worklog-new-org-phone"
+                      type="tel"
+                      className="repair-worklog-card__input"
+                      placeholder="+7 (900) 000-00-00"
+                      value={workLogNewOrg.phone}
+                      onChange={(e) =>
+                        setWorkLogNewOrg((x) => ({
+                          ...x,
+                          phone: e.target.value,
+                        }))
+                      }
+                      autoComplete="tel"
+                    />
+                  </div>
+                  <div className="repair-worklog-modal-actions">
+                    <button
+                      type="button"
+                      className="btn btn--secondary"
+                      onClick={closeWorkLogAddOrgModal}
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--primary"
+                      onClick={submitWorkLogNewOrg}
+                      disabled={
+                        !workLogNewOrg.shortName.trim() ||
+                        !workLogNewOrg.phone.trim()
+                      }
+                    >
+                      Добавить и выбрать
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

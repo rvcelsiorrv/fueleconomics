@@ -38,6 +38,12 @@ export const repairWorkLogInitialEntries = [
     endDate: "2026-02-14",
     completedWorks:
       "Снятие ТНВД, замена комплекта уплотнений и клапана PRV, проверка на стенде, установка, пуск.",
+    remark: "Гарантия на работы 30 суток. Заказчик уведомлён о необходимости замены топливного фильтра через 500 км.",
+    installedParts: [
+      { id: "wlp-m1-1", name: "Комплект уплотнений ТНВД (CP3)", qty: 1 },
+      { id: "wlp-m1-2", name: "Клапан ограничения давления (PRV)", qty: 1 },
+    ],
+    pumpNumbers: ["0986437398"],
   },
   {
     id: "rwl-mock-2",
@@ -47,6 +53,12 @@ export const repairWorkLogInitialEntries = [
     endDate: "2026-03-01",
     completedWorks:
       "Диагностика утечки, замена вала привода и подшипника, регулировка подачи.",
+    remark: "Оплата по счёту № 184 от 15.02.2026.",
+    installedParts: [
+      { id: "wlp-m2-1", name: "Вал привода ТНВД", qty: 1 },
+      { id: "wlp-m2-2", name: "Подшипник опорный", qty: 1 },
+    ],
+    pumpNumbers: ["0986437340", "0986437340"],
   },
   {
     id: "rwl-mock-3",
@@ -56,6 +68,9 @@ export const repairWorkLogInitialEntries = [
     endDate: "",
     completedWorks:
       "Принят в работу, дефектовка. Окончание ремонта — по факту выполнения.",
+    remark: "Согласовать с механиком хозяйства срок выдачи после поступления запчастей.",
+    installedParts: [],
+    pumpNumbers: ["294000-090"],
   },
   {
     id: "rwl-mock-4",
@@ -65,5 +80,22 @@ export const repairWorkLogInitialEntries = [
     endDate: "2026-03-20",
     completedWorks:
       "Ремонт плунжерной пары, обновление топливного фильтра, обкатка на стенде.",
+    remark: "",
+    installedParts: [
+      { id: "wlp-m4-1", name: "Плунжерная пара (восст.)", qty: 1 },
+      { id: "wlp-m4-2", name: "Топливный фильтр тонкой очистки", qty: 1 },
+    ],
+    pumpNumbers: ["CR-7788"],
+  },
+  {
+    id: "rwl-mock-5",
+    orgId: "rw-org-1",
+    transportHpfp: "Volvo FH, Е999XX77; ТНВД Bosch",
+    startDate: "2026-03-25",
+    endDate: "",
+    completedWorks: "Диагностика, ожидание запчастей.",
+    remark: "Вторая заявка от той же организации — тот же номер ТНВД.",
+    installedParts: [],
+    pumpNumbers: ["0986437398"],
   },
 ];
