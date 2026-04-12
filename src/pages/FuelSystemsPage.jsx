@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fuelVehicles } from "../data/mockFuelFleet";
 import {
   hpfpOrganizations,
@@ -28,15 +28,6 @@ function formatDateRu(iso) {
   return `${d}.${m}.${y}`;
 }
 
-function formatClientCountRu(n) {
-  const m100 = n % 100;
-  const m10 = n % 10;
-  if (m100 >= 11 && m100 <= 14) return `${n} клиентов`;
-  if (m10 === 1) return `${n} клиент`;
-  if (m10 >= 2 && m10 <= 4) return `${n} клиента`;
-  return `${n} клиентов`;
-}
-
 function makeEmptyWorkLogDraft(orgId) {
   return {
     orgId,
@@ -45,6 +36,7 @@ function makeEmptyWorkLogDraft(orgId) {
     startDate: "",
     endDate: "",
     completedWorks: "",
+    hpfpParameters: "",
     remark: "",
     installedParts: [],
     pumpNumbers: [],
@@ -90,6 +82,7 @@ export default function FuelSystemsPage() {
     repairWorkLogInitialEntries.map((e) => ({
       ...e,
       clientLastName: e.clientLastName ?? "",
+      hpfpParameters: e.hpfpParameters ?? "",
       remark: e.remark ?? "",
       installedParts: (e.installedParts ?? []).map((p) => ({ ...p })),
       pumpNumbers: [...(e.pumpNumbers ?? [])],
@@ -104,20 +97,17 @@ export default function FuelSystemsPage() {
   });
   const [workLogEditingId, setWorkLogEditingId] = useState(null);
   const [workLogDraft, setWorkLogDraft] = useState(() =>
-    makeEmptyWorkLogDraft(repairWorkLogOrganizations[0].id),
+    makeEmptyWorkLogDraft(repairWorkLogOrganizations[0]?.id ?? ""),
   );
   const [workLogPartDraft, setWorkLogPartDraft] = useState({
     name: "",
     qty: "1",
   });
   const [workLogPumpInput, setWorkLogPumpInput] = useState("");
-  const [expandedSettlementIds, setExpandedSettlementIds] = useState(
-    () => new Set(repairWorkLogOrganizations.map((o) => o.id)),
-  );
   const [workLogClientLastNameMissing, setWorkLogClientLastNameMissing] =
     useState(false);
   const [selectedWorkLogSettlementId, setSelectedWorkLogSettlementId] =
-    useState(() => repairWorkLogOrganizations[0]?.id ?? null);
+    useState(null);
 
   useEffect(() => {
     if (workLogOrganizations.length === 0) {
@@ -125,11 +115,8 @@ export default function FuelSystemsPage() {
       return;
     }
     setSelectedWorkLogSettlementId((cur) => {
-      if (cur && workLogOrganizations.some((o) => o.id === cur)) return cur;
-      const sorted = [...workLogOrganizations].sort(
-        (a, b) => a.number - b.number,
-      );
-      return sorted[0]?.id ?? null;
+      if (!cur) return null;
+      return workLogOrganizations.some((o) => o.id === cur) ? cur : null;
     });
   }, [workLogOrganizations]);
 
@@ -158,11 +145,6 @@ export default function FuelSystemsPage() {
     return hpfpRepairs.filter((r) => r.orgId === orgFilter);
   }, [hpfpRepairs, orgFilter]);
 
-  const workLogSettlementsSorted = useMemo(
-    () => [...workLogOrganizations].sort((a, b) => a.number - b.number),
-    [workLogOrganizations],
-  );
-
   const workLogOrgStats = useMemo(() => {
     return workLogOrganizations.map((o) => {
       const uniquePump = new Set();
@@ -188,12 +170,12 @@ export default function FuelSystemsPage() {
     [workLogOrgStats],
   );
 
-  const workLogSettlementsForJournal = useMemo(() => {
+  const workLogEntriesForSelectedSettlement = useMemo(() => {
     if (!selectedWorkLogSettlementId) return [];
-    return workLogSettlementsSorted.filter(
-      (o) => o.id === selectedWorkLogSettlementId,
+    return workLogEntries.filter(
+      (e) => e.orgId === selectedWorkLogSettlementId,
     );
-  }, [workLogSettlementsSorted, selectedWorkLogSettlementId]);
+  }, [workLogEntries, selectedWorkLogSettlementId]);
 
   const selectedWorkLogSettlement =
     selectedWorkLogSettlementId != null
@@ -267,18 +249,8 @@ export default function FuelSystemsPage() {
     );
   };
 
-  const toggleWorkLogSettlementExpanded = (orgId) => {
-    setExpandedSettlementIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(orgId)) next.delete(orgId);
-      else next.add(orgId);
-      return next;
-    });
-  };
-
   const selectWorkLogSettlement = (orgId) => {
-    setSelectedWorkLogSettlementId(orgId);
-    setExpandedSettlementIds((prev) => new Set(prev).add(orgId));
+    setSelectedWorkLogSettlementId((cur) => (cur === orgId ? null : orgId));
   };
 
   const openWorkLogModal = () => {
@@ -286,7 +258,7 @@ export default function FuelSystemsPage() {
       selectedWorkLogSettlementId &&
       workLogOrganizations.some((o) => o.id === selectedWorkLogSettlementId)
         ? selectedWorkLogSettlementId
-        : workLogOrganizations[0]?.id;
+        : null;
     if (!preferredId) return;
     setWorkLogEditingId(null);
     setWorkLogAddOrgModalOpen(false);
@@ -307,6 +279,7 @@ export default function FuelSystemsPage() {
       startDate: entry.startDate,
       endDate: entry.endDate,
       completedWorks: entry.completedWorks,
+      hpfpParameters: entry.hpfpParameters ?? "",
       remark: entry.remark ?? "",
       installedParts: (entry.installedParts ?? []).map((p) => ({ ...p })),
       pumpNumbers: [...(entry.pumpNumbers ?? [])],
@@ -370,7 +343,6 @@ export default function FuelSystemsPage() {
     setWorkLogOrganizations((prev) => [...prev, newOrg]);
     setWorkLogDraft((d) => ({ ...d, orgId: newOrg.id }));
     setSelectedWorkLogSettlementId(newOrg.id);
-    setExpandedSettlementIds((prev) => new Set(prev).add(newOrg.id));
     closeWorkLogAddOrgModal();
   };
 
@@ -449,7 +421,9 @@ export default function FuelSystemsPage() {
         </h2>
         <p className="fuel-section-desc">
           Населённые пункты из журнала: число заявок и уникальных номеров ТНВД.
-          Нажмите карточку, чтобы отфильтровать журнал ремонта по этому пункту.
+          Нажмите карточку — ниже появится журнал ремонта по этому пункту;
+          повторный клик по&nbsp;той же карточке снимает выбор и скрывает
+          журнал.
         </p>
         <div className="hpfp-org-cards">
           {workLogOrgStatsSorted.map((o) => (
@@ -483,47 +457,49 @@ export default function FuelSystemsPage() {
         </div>
       </section>
 
-      <section
-        className="repair-worklog-section"
-        aria-labelledby="repair-worklog-title"
-      >
-        <h2 id="repair-worklog-title" className="fuel-section-title">
-          Журнал ремонта топливных систем
-        </h2>
-        <p className="fuel-section-desc">
-          Строка таблицы — населённый пункт; после раскрытия видны клиенты
-          (фамилия) и&nbsp;детали заявки. Карточка добавляется через форму:
-          населённый пункт, фамилия клиента, транспорт и&nbsp;ТНВД, даты,
-          работы, запчасти и&nbsp;примечание.
-        </p>
-        <div className="repair-worklog-toolbar">
-          <button
-            type="button"
-            className="btn btn--primary"
-            onClick={openWorkLogModal}
-          >
-            Добавить карточку
-          </button>
-        </div>
-
-        {workLogOrganizations.length === 0 ? (
-          <p className="repair-worklog-empty">
-            Населённых пунктов нет в списке. Добавьте данные в код или расширьте
-            форму — сейчас журнал привязан к справочнику пунктов.
+      {selectedWorkLogSettlementId && selectedWorkLogSettlement ? (
+        <section
+          className="repair-worklog-section"
+          aria-labelledby="repair-worklog-title"
+        >
+          <h2 id="repair-worklog-title" className="fuel-section-title">
+            Журнал ремонта топливных систем
+          </h2>
+          <p className="fuel-section-desc">
+            Заявки по выбранному населённому пункту. Чтобы закрыть журнал,
+            нажмите ту же карточку пункта в&nbsp;блоке «Учёт по населённым
+            пунктам» ещё раз.
           </p>
-        ) : (
+          <div className="repair-worklog-toolbar repair-worklog-toolbar--filter">
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={openWorkLogModal}
+            >
+              Добавить карточку
+            </button>
+            <p className="repair-worklog-toolbar__filter-hint" role="status">
+              Журнал:{" "}
+              <strong>
+                №{selectedWorkLogSettlement.number} —{" "}
+                {selectedWorkLogSettlement.shortName}
+              </strong>
+            </p>
+          </div>
+
           <div className="repair-worklog-table-wrap">
             <table className="repair-worklog-table">
               <thead>
                 <tr>
                   <th scope="col">П/п</th>
-                  <th scope="col">Населённый пункт / клиент</th>
+                  <th scope="col">Клиент (фамилия)</th>
                   <th scope="col">Телефон</th>
                   <th scope="col">Топливная система</th>
                   <th scope="col">Начало</th>
                   <th scope="col">Окончание</th>
                   <th scope="col">Выполненные работы</th>
                   <th scope="col">Установленные запчасти</th>
+                  <th scope="col">Параметры ТНВД</th>
                   <th scope="col">Примечание</th>
                   <th scope="col">
                     <span className="visually-hidden">Действия</span>
@@ -531,198 +507,129 @@ export default function FuelSystemsPage() {
                 </tr>
               </thead>
               <tbody>
-                {workLogSettlementsSorted.map((org, settlementIndex) => {
-                  const orgEntries = workLogEntries.filter(
-                    (e) => e.orgId === org.id,
-                  );
-                  const expanded = expandedSettlementIds.has(org.id);
-                  const settlementTel = phoneToTelHref(org.phone);
-                  const entryCount = orgEntries.length;
-                  const expandLabel = expanded
-                    ? `Свернуть список клиентов: ${org.shortName}`
-                    : `Развернуть список клиентов: ${org.shortName}`;
-
-                  return (
-                    <Fragment key={org.id}>
-                      <tr className="repair-worklog-table__row repair-worklog-table__row--settlement">
-                        <td>{settlementIndex + 1}</td>
-                        <td className="repair-worklog-table__org">
-                          <span className="repair-worklog-table__settlement-cell">
-                            <button
-                              type="button"
-                              className={`repair-worklog-table__expand-btn${
-                                entryCount === 0
-                                  ? " repair-worklog-table__expand-btn--disabled"
-                                  : ""
-                              }`}
-                              aria-expanded={entryCount > 0 ? expanded : false}
-                              disabled={entryCount === 0}
-                              aria-label={
-                                entryCount === 0
-                                  ? `Нет заявок по населённому пункту ${org.shortName}`
-                                  : expandLabel
-                              }
-                              title={
-                                entryCount === 0
-                                  ? "Нет заявок по клиентам"
-                                  : undefined
-                              }
-                              onClick={() =>
-                                toggleWorkLogSettlementExpanded(org.id)
-                              }
-                            >
-                              <svg
-                                className={`repair-worklog-table__chevron${
-                                  expanded
-                                    ? " repair-worklog-table__chevron--open"
-                                    : ""
-                                }`}
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                              >
-                                <polyline points="6 9 12 15 18 9" />
-                              </svg>
-                            </button>
-                            <span className="repair-worklog-table__settlement-title">
-                              №{org.number} — {org.shortName}
-                            </span>
-                            {entryCount > 0 ? (
-                              <span className="repair-worklog-table__client-count">
-                                {formatClientCountRu(entryCount)}
-                              </span>
-                            ) : null}
-                          </span>
+                {workLogEntriesForSelectedSettlement.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={11}
+                      className="repair-worklog-table__empty-filter"
+                    >
+                      По этому населённому пункту заявок пока нет. Нажмите
+                      «Добавить карточку».
+                    </td>
+                  </tr>
+                ) : (
+                  workLogEntriesForSelectedSettlement.map((entry, index) => {
+                    const org = workLogOrgById[entry.orgId];
+                    const tel = org ? phoneToTelHref(org.phone) : undefined;
+                    const fuelSystemOnly =
+                      entry.transportHpfp.trim() || "—";
+                    const works = entry.completedWorks.trim() || "—";
+                    const hpfpParamsText =
+                      (entry.hpfpParameters ?? "").trim() || "—";
+                    const remarkText =
+                      (entry.remark ?? "").trim() || "—";
+                    const partsText =
+                      entry.installedParts?.length > 0
+                        ? entry.installedParts
+                            .map((p) => `${p.name} ×${p.qty}`)
+                            .join("; ")
+                        : "—";
+                    const clientLabel =
+                      (entry.clientLastName ?? "").trim() || "—";
+                    return (
+                      <tr key={entry.id}>
+                        <td>{index + 1}</td>
+                        <td className="repair-worklog-table__org repair-worklog-table__client-name">
+                          {clientLabel}
                         </td>
                         <td>
-                          {settlementTel ? (
-                            <a href={settlementTel}>{org.phone}</a>
+                          {org && tel ? (
+                            <a href={tel}>{org.phone}</a>
                           ) : (
-                            org.phone
+                            (org?.phone ?? "—")
                           )}
                         </td>
-                        <td className="repair-worklog-table__cell-muted">—</td>
-                        <td className="repair-worklog-table__cell-muted">—</td>
-                        <td className="repair-worklog-table__cell-muted">—</td>
-                        <td className="repair-worklog-table__cell-muted">—</td>
-                        <td className="repair-worklog-table__cell-muted">—</td>
-                        <td className="repair-worklog-table__cell-muted">—</td>
-                        <td className="repair-worklog-table__actions" />
+                        <td className="repair-worklog-table__fuel-system">
+                          {fuelSystemOnly}
+                        </td>
+                        <td className="repair-worklog-table__date">
+                          {formatDateRu(entry.startDate)}
+                        </td>
+                        <td className="repair-worklog-table__date">
+                          {formatDateRu(entry.endDate)}
+                        </td>
+                        <td className="repair-worklog-table__works">
+                          {works}
+                        </td>
+                        <td className="repair-worklog-table__parts">
+                          {partsText}
+                        </td>
+                        <td className="repair-worklog-table__hpfp-params">
+                          {hpfpParamsText}
+                        </td>
+                        <td className="repair-worklog-table__remark">
+                          {remarkText}
+                        </td>
+                        <td className="repair-worklog-table__actions">
+                          <button
+                            type="button"
+                            className="repair-worklog-table__icon-btn repair-worklog-table__icon-btn--edit"
+                            onClick={() => openWorkLogEditModal(entry)}
+                            aria-label={`Редактировать заявку: ${clientLabel}`}
+                            title="Редактировать"
+                          >
+                            <svg
+                              className="repair-worklog-table__icon"
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            className="repair-worklog-table__icon-btn repair-worklog-table__icon-btn--delete"
+                            onClick={() => removeWorkLogEntry(entry.id)}
+                            aria-label={`Удалить заявку: ${clientLabel}`}
+                            title="Удалить"
+                          >
+                            <svg
+                              className="repair-worklog-table__icon"
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              <line x1="10" y1="11" x2="10" y2="17" />
+                              <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                          </button>
+                        </td>
                       </tr>
-                      {expanded && entryCount > 0
-                        ? orgEntries.map((entry) => {
-                            const fuelSystemOnly =
-                              entry.transportHpfp.trim() || "—";
-                            const works = entry.completedWorks.trim() || "—";
-                            const remarkText =
-                              (entry.remark ?? "").trim() || "—";
-                            const partsText =
-                              entry.installedParts?.length > 0
-                                ? entry.installedParts
-                                    .map((p) => `${p.name} ×${p.qty}`)
-                                    .join("; ")
-                                : "—";
-                            const clientLabel =
-                              (entry.clientLastName ?? "").trim() || "—";
-                            return (
-                              <tr
-                                key={entry.id}
-                                className="repair-worklog-table__row repair-worklog-table__row--client"
-                              >
-                                <td className="repair-worklog-table__cell-sub" />
-                                <td className="repair-worklog-table__org repair-worklog-table__client-name">
-                                  {clientLabel}
-                                </td>
-                                <td className="repair-worklog-table__cell-muted">
-                                  —
-                                </td>
-                                <td className="repair-worklog-table__fuel-system">
-                                  {fuelSystemOnly}
-                                </td>
-                                <td className="repair-worklog-table__date">
-                                  {formatDateRu(entry.startDate)}
-                                </td>
-                                <td className="repair-worklog-table__date">
-                                  {formatDateRu(entry.endDate)}
-                                </td>
-                                <td className="repair-worklog-table__works">
-                                  {works}
-                                </td>
-                                <td className="repair-worklog-table__parts">
-                                  {partsText}
-                                </td>
-                                <td className="repair-worklog-table__remark">
-                                  {remarkText}
-                                </td>
-                                <td className="repair-worklog-table__actions">
-                                  <button
-                                    type="button"
-                                    className="repair-worklog-table__icon-btn repair-worklog-table__icon-btn--edit"
-                                    onClick={() => openWorkLogEditModal(entry)}
-                                    aria-label={`Редактировать заявку: ${clientLabel}`}
-                                    title="Редактировать"
-                                  >
-                                    <svg
-                                      className="repair-worklog-table__icon"
-                                      width="18"
-                                      height="18"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      aria-hidden="true"
-                                    >
-                                      <path d="M12 20h9" />
-                                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="repair-worklog-table__icon-btn repair-worklog-table__icon-btn--delete"
-                                    onClick={() => removeWorkLogEntry(entry.id)}
-                                    aria-label={`Удалить заявку: ${clientLabel}`}
-                                    title="Удалить"
-                                  >
-                                    <svg
-                                      className="repair-worklog-table__icon"
-                                      width="18"
-                                      height="18"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      aria-hidden="true"
-                                    >
-                                      <path d="M3 6h18" />
-                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                      <line x1="10" y1="11" x2="10" y2="17" />
-                                      <line x1="14" y1="11" x2="14" y2="17" />
-                                    </svg>
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })
-                        : null}
-                    </Fragment>
-                  );
-                })}
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
-        )}
-      </section>
+        </section>
+      ) : null}
 
       <section className="hpfp-section" aria-labelledby="hpfp-repair-title">
         <h2 id="hpfp-repair-title" className="fuel-section-title">
@@ -1226,6 +1133,25 @@ export default function FuelSystemsPage() {
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="repair-worklog-card__works repair-worklog-modal__remark">
+              <label
+                htmlFor="worklog-modal-hpfp-params"
+                className="repair-worklog-card__field-label"
+              >
+                Параметры ТНВД
+              </label>
+              <textarea
+                id="worklog-modal-hpfp-params"
+                className="repair-worklog-card__textarea repair-worklog-card__textarea--remark"
+                placeholder="Например: давления, регулировки, показания стенда…"
+                value={workLogDraft.hpfpParameters}
+                onChange={(e) =>
+                  setWorkLogDraftField("hpfpParameters", e.target.value)
+                }
+                rows={3}
+              />
             </div>
 
             <div className="repair-worklog-card__works repair-worklog-modal__remark">

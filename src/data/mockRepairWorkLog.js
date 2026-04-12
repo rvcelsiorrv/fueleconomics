@@ -39,6 +39,8 @@ export const repairWorkLogInitialEntries = [
     endDate: "2026-02-14",
     completedWorks:
       "Снятие ТНВД, замена комплекта уплотнений и клапана PRV, проверка на стенде, установка, пуск.",
+    hpfpParameters:
+      "CP3: давление на обратке 4 бар; подача откалибрована по стенду; утечки нет.",
     remark: "Гарантия на работы 30 суток. Заказчик уведомлён о необходимости замены топливного фильтра через 500 км.",
     installedParts: [
       { id: "wlp-m1-1", name: "Комплект уплотнений ТНВД (CP3)", qty: 1 },
@@ -55,6 +57,8 @@ export const repairWorkLogInitialEntries = [
     endDate: "2026-03-01",
     completedWorks:
       "Диагностика утечки, замена вала привода и подшипника, регулировка подачи.",
+    hpfpParameters:
+      "CP3: холостой ход 520 об/мин; коррекция начала подачи +2°; давление в рампе в норме.",
     remark: "Оплата по счёту № 184 от 15.02.2026.",
     installedParts: [
       { id: "wlp-m2-1", name: "Вал привода ТНВД", qty: 1 },
@@ -71,6 +75,8 @@ export const repairWorkLogInitialEntries = [
     endDate: "",
     completedWorks:
       "Принят в работу, дефектовка. Окончание ремонта — по факту выполнения.",
+    hpfpParameters:
+      "HP3: замер давлений после ремонта — по факту установки на трактор.",
     remark: "Согласовать с механиком хозяйства срок выдачи после поступления запчастей.",
     installedParts: [],
     pumpNumbers: ["294000-090"],
@@ -84,6 +90,8 @@ export const repairWorkLogInitialEntries = [
     endDate: "2026-03-20",
     completedWorks:
       "Ремонт плунжерной пары, обновление топливного фильтра, обкатка на стенде.",
+    hpfpParameters:
+      "Common Rail: давление пилотного клапана в допуске; обкатка 15 мин на стенде.",
     remark: "",
     installedParts: [
       { id: "wlp-m4-1", name: "Плунжерная пара (восст.)", qty: 1 },
@@ -99,6 +107,8 @@ export const repairWorkLogInitialEntries = [
     startDate: "2026-03-25",
     endDate: "",
     completedWorks: "Диагностика, ожидание запчастей.",
+    hpfpParameters:
+      "Bosch: предварительная диагностика без полной разборки; параметры уточняются.",
     remark: "Вторая заявка от той же организации — тот же номер ТНВД.",
     installedParts: [],
     pumpNumbers: ["0986437398"],

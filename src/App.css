@@ -421,6 +421,18 @@
     inset 0 1px 0 color-mix(in srgb, #fff 25%, transparent);
 }
 
+.btn--primary:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+}
+
+.btn--primary:disabled:hover {
+  filter: none;
+  box-shadow: none;
+}
+
 :root[data-theme="dark"] .btn--primary {
   color: #0b1120;
   box-shadow:
@@ -2200,88 +2212,12 @@
   white-space: nowrap;
 }
 
-.repair-worklog-table tbody tr.repair-worklog-table__row--settlement {
-  background: color-mix(in srgb, var(--shop-surface) 24%, var(--shop-card));
-  font-weight: 600;
-}
-
-.repair-worklog-table tbody tr.repair-worklog-table__row--settlement:hover {
-  background: color-mix(in srgb, var(--shop-surface) 38%, var(--shop-card));
-}
-
-.repair-worklog-table tbody tr.repair-worklog-table__row--client {
-  background: var(--shop-card);
-  box-shadow: inset 3px 0 0
-    color-mix(in srgb, var(--shop-accent) 52%, transparent);
-}
-
-.repair-worklog-table tbody tr.repair-worklog-table__row--client:hover {
-  background: color-mix(in srgb, var(--shop-surface) 22%, var(--shop-card));
-}
-
-.repair-worklog-table__settlement-cell {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.5rem;
-}
-
-.repair-worklog-table__expand-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--shop-border);
-  border-radius: var(--shop-radius-sm);
-  background: var(--shop-card);
-  color: var(--shop-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    background 0.2s var(--shop-ease-soft),
-    border-color 0.2s var(--shop-ease-soft),
-    color 0.2s var(--shop-ease-soft);
-}
-
-.repair-worklog-table__expand-btn:hover:not(:disabled) {
-  color: var(--shop-accent);
-  border-color: color-mix(in srgb, var(--shop-accent) 35%, var(--shop-border));
-  background: color-mix(in srgb, var(--shop-accent-soft) 35%, var(--shop-card));
-}
-
-.repair-worklog-table__expand-btn--disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.repair-worklog-table__chevron {
-  display: block;
-  transition: transform 0.2s var(--shop-ease-soft);
-}
-
-.repair-worklog-table__chevron--open {
-  transform: rotate(180deg);
-}
-
-.repair-worklog-table__client-count {
-  font-size: 0.78em;
-  font-weight: 500;
-  color: var(--shop-muted);
-}
-
-.repair-worklog-table__cell-muted {
-  color: var(--shop-muted);
-}
-
-.repair-worklog-table__cell-sub {
-  border-bottom: 1px solid var(--shop-border);
-}
-
 .repair-worklog-table__client-name {
   font-weight: 600;
+}
+
+.repair-worklog-table tbody tr:hover {
+  background: color-mix(in srgb, var(--shop-surface) 26%, var(--shop-card));
 }
 
 .repair-worklog-table tbody tr:last-child td {
@@ -2308,6 +2244,13 @@
 
 .repair-worklog-table__works {
   min-width: min(12rem, 100%);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--shop-text);
+}
+
+.repair-worklog-table__hpfp-params {
+  min-width: min(11rem, 100%);
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--shop-text);
@@ -2447,6 +2390,71 @@
   border-color: color-mix(in srgb, var(--shop-accent) 16%, var(--shop-border));
   box-shadow: var(--shadow-sm);
   transform: translateY(-2px);
+}
+
+.hpfp-org-card.hpfp-org-card--filter {
+  display: block;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.hpfp-org-card--filter:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--shop-accent) 65%, var(--shop-border));
+  outline-offset: 3px;
+}
+
+.hpfp-org-card--filter-active {
+  border-color: color-mix(in srgb, var(--shop-accent) 42%, var(--shop-border));
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 1px color-mix(in srgb, var(--shop-accent) 22%, transparent);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--shop-accent-soft) 32%, var(--shop-card)),
+    var(--shop-card)
+  );
+  transform: none;
+}
+
+.hpfp-org-card--filter-active:hover {
+  border-color: color-mix(in srgb, var(--shop-accent) 50%, var(--shop-border));
+  transform: translateY(-1px);
+}
+
+.hpfp-org-card--filter-active::before {
+  opacity: 1;
+}
+
+.repair-worklog-toolbar--filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem 1.25rem;
+}
+
+.repair-worklog-toolbar__filter-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--shop-muted);
+}
+
+.repair-worklog-toolbar__filter-hint strong {
+  color: var(--shop-text);
+  font-weight: 650;
+}
+
+.repair-worklog-table__empty-filter {
+  padding: 1.25rem 0.75rem;
+  text-align: center;
+  color: var(--shop-muted);
+  font-size: 0.9rem;
 }
 
 .hpfp-org-card__name {
