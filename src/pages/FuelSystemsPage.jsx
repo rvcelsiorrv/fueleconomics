@@ -190,6 +190,13 @@ export default function FuelSystemsPage() {
   const [selectedWorkLogSettlementId, setSelectedWorkLogSettlementId] =
     useState(null);
 
+  const [workLogTableFilterTransport, setWorkLogTableFilterTransport] =
+    useState("");
+  const [workLogTableFilterHpfpType, setWorkLogTableFilterHpfpType] =
+    useState("");
+  const [workLogTableFilterPumpNumber, setWorkLogTableFilterPumpNumber] =
+    useState("");
+
   useEffect(() => {
     if (skipNextPersist.current) {
       skipNextPersist.current = false;
@@ -228,6 +235,12 @@ export default function FuelSystemsPage() {
       setWorkLogEditingId(null);
       setWorkLogAddOrgModalOpen(false);
     }
+  }, [selectedWorkLogSettlementId]);
+
+  useEffect(() => {
+    setWorkLogTableFilterTransport("");
+    setWorkLogTableFilterHpfpType("");
+    setWorkLogTableFilterPumpNumber("");
   }, [selectedWorkLogSettlementId]);
 
   useEffect(() => {
@@ -277,6 +290,64 @@ export default function FuelSystemsPage() {
       (e) => e.orgId === selectedWorkLogSettlementId,
     );
   }, [workLogEntries, selectedWorkLogSettlementId]);
+
+  const workLogTableFilterOptions = useMemo(() => {
+    const transports = new Set();
+    const hpfpTypes = new Set();
+    const pumpNumbers = new Set();
+    for (const e of workLogEntriesForSelectedSettlement) {
+      const t = String(e.transportType ?? "").trim();
+      if (t) transports.add(t);
+      const h = String(e.hpfpType ?? "").trim();
+      if (h) hpfpTypes.add(h);
+      const p = normalizePumpNumberFromEntry(e);
+      if (p) pumpNumbers.add(p);
+    }
+    return {
+      transports: [...transports].sort((a, b) =>
+        a.localeCompare(b, "ru"),
+      ),
+      hpfpTypes: [...hpfpTypes].sort((a, b) => a.localeCompare(b, "ru")),
+      pumpNumbers: [...pumpNumbers].sort((a, b) =>
+        a.localeCompare(b, "ru"),
+      ),
+    };
+  }, [workLogEntriesForSelectedSettlement]);
+
+  useEffect(() => {
+    setWorkLogTableFilterTransport((v) =>
+      v && !workLogTableFilterOptions.transports.includes(v) ? "" : v,
+    );
+    setWorkLogTableFilterHpfpType((v) =>
+      v && !workLogTableFilterOptions.hpfpTypes.includes(v) ? "" : v,
+    );
+    setWorkLogTableFilterPumpNumber((v) =>
+      v && !workLogTableFilterOptions.pumpNumbers.includes(v) ? "" : v,
+    );
+  }, [workLogTableFilterOptions]);
+
+  const workLogEntriesFilteredForTable = useMemo(() => {
+    return workLogEntriesForSelectedSettlement.filter((entry) => {
+      if (workLogTableFilterTransport) {
+        const t = String(entry.transportType ?? "").trim();
+        if (t !== workLogTableFilterTransport) return false;
+      }
+      if (workLogTableFilterHpfpType) {
+        const h = String(entry.hpfpType ?? "").trim();
+        if (h !== workLogTableFilterHpfpType) return false;
+      }
+      if (workLogTableFilterPumpNumber) {
+        if (normalizePumpNumberFromEntry(entry) !== workLogTableFilterPumpNumber)
+          return false;
+      }
+      return true;
+    });
+  }, [
+    workLogEntriesForSelectedSettlement,
+    workLogTableFilterTransport,
+    workLogTableFilterHpfpType,
+    workLogTableFilterPumpNumber,
+  ]);
 
   const selectedWorkLogSettlement =
     selectedWorkLogSettlementId != null
@@ -518,9 +589,9 @@ export default function FuelSystemsPage() {
           повторный клик по&nbsp;той же карточке снимает выбор и скрывает
           журнал.
         </p>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-4">
+        <div className="flex flex-wrap gap-4">
           {workLogOrgStatsSorted.length === 0 ? (
-            <div className="col-span-full rounded-lg border border-dashed border-zinc-300 bg-zinc-50/80 px-4 py-5 text-center text-sm text-zinc-600 dark:border-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-400">
+            <div className="w-full rounded-lg border border-dashed border-zinc-300 bg-zinc-50/80 px-4 py-5 text-center text-sm text-zinc-600 dark:border-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-400">
               <p className="mb-4">
                 Пока нет населённых пунктов. Добавьте первый — он появится в
                 списке, и вы сможете открыть журнал ремонта по этому пункту.
@@ -539,7 +610,7 @@ export default function FuelSystemsPage() {
                 key={o.id}
                 type="button"
                 className={[
-                  "w-full max-w-none appearance-none rounded-[10px] border p-5 text-left font-inherit text-inherit transition",
+                  "w-fit max-w-full min-w-0 appearance-none rounded-[10px] border p-5 text-left font-inherit text-inherit transition",
                   selectedWorkLogSettlementId === o.id
                     ? "border-blue-600/35 bg-blue-50 shadow-sheet dark:border-blue-500/40 dark:bg-blue-950/30"
                     : "border-zinc-200 bg-white shadow-[0_1px_0_rgb(24_24_27/0.04)] hover:-translate-y-px hover:border-blue-600/25 hover:shadow dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-blue-500/30",
@@ -600,6 +671,92 @@ export default function FuelSystemsPage() {
                 {selectedWorkLogSettlement.shortName}
               </strong>
             </p>
+          </div>
+
+          <div
+            className="mb-4 flex flex-wrap items-end gap-4 gap-y-3"
+            role="search"
+            aria-label="Фильтры таблицы журнала"
+          >
+            <div className="min-w-[min(100%,12rem)] flex-1 sm:max-w-[14rem]">
+              <label
+                htmlFor="worklog-table-filter-transport"
+                className={lb}
+              >
+                Тип транспорта
+              </label>
+              <select
+                id="worklog-table-filter-transport"
+                className={sel}
+                value={workLogTableFilterTransport}
+                onChange={(e) =>
+                  setWorkLogTableFilterTransport(e.target.value)
+                }
+              >
+                <option value="">Все</option>
+                {workLogTableFilterOptions.transports.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-[min(100%,12rem)] flex-1 sm:max-w-[14rem]">
+              <label htmlFor="worklog-table-filter-hpfp" className={lb}>
+                Тип ТНВД
+              </label>
+              <select
+                id="worklog-table-filter-hpfp"
+                className={sel}
+                value={workLogTableFilterHpfpType}
+                onChange={(e) => setWorkLogTableFilterHpfpType(e.target.value)}
+              >
+                <option value="">Все</option>
+                {workLogTableFilterOptions.hpfpTypes.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-[min(100%,12rem)] flex-1 sm:max-w-[14rem]">
+              <label
+                htmlFor="worklog-table-filter-pump-number"
+                className={lb}
+              >
+                Номер ТНВД
+              </label>
+              <select
+                id="worklog-table-filter-pump-number"
+                className={sel}
+                value={workLogTableFilterPumpNumber}
+                onChange={(e) =>
+                  setWorkLogTableFilterPumpNumber(e.target.value)
+                }
+              >
+                <option value="">Все</option>
+                {workLogTableFilterOptions.pumpNumbers.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {(workLogTableFilterTransport ||
+              workLogTableFilterHpfpType ||
+              workLogTableFilterPumpNumber) && (
+              <button
+                type="button"
+                className={btnS}
+                onClick={() => {
+                  setWorkLogTableFilterTransport("");
+                  setWorkLogTableFilterHpfpType("");
+                  setWorkLogTableFilterPumpNumber("");
+                }}
+              >
+                Сбросить фильтры
+              </button>
+            )}
           </div>
 
           <div className="overflow-x-auto rounded-[10px] border border-zinc-200 bg-white shadow-[0_1px_0_rgb(24_24_27/0.04)] dark:border-zinc-700 dark:bg-zinc-900">
@@ -697,8 +854,18 @@ export default function FuelSystemsPage() {
                       «Добавить карточку».
                     </td>
                   </tr>
+                ) : workLogEntriesFilteredForTable.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={13}
+                      className="px-3 py-5 text-center text-sm text-zinc-500 dark:text-zinc-400"
+                    >
+                      Нет записей с выбранными фильтрами. Измените условия или
+                      нажмите «Сбросить фильтры».
+                    </td>
+                  </tr>
                 ) : (
-                  workLogEntriesForSelectedSettlement.map((entry, index) => {
+                  workLogEntriesFilteredForTable.map((entry, index) => {
                     const transportText =
                       (entry.transportType ?? "").trim() || "—";
                     const hpfpTypeText =
@@ -796,55 +963,55 @@ export default function FuelSystemsPage() {
                         </td>
                         <td className="align-top px-3 py-2.5">
                           <div className="flex flex-wrap items-center gap-1.5">
-                          <button
-                            type="button"
-                            className={iconBtn}
-                            onClick={() => openWorkLogEditModal(entry)}
-                            aria-label={`Редактировать заявку: ${clientLabel}`}
-                            title="Редактировать"
-                          >
-                            <svg
-                              className="block h-[18px] w-[18px] shrink-0"
-                              width="18"
-                              height="18"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              aria-hidden="true"
+                            <button
+                              type="button"
+                              className={iconBtn}
+                              onClick={() => openWorkLogEditModal(entry)}
+                              aria-label={`Редактировать заявку: ${clientLabel}`}
+                              title="Редактировать"
                             >
-                              <path d="M12 20h9" />
-                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
-                            className={iconBtnDel}
-                            onClick={() => removeWorkLogEntry(entry.id)}
-                            aria-label={`Удалить заявку: ${clientLabel}`}
-                            title="Удалить"
-                          >
-                            <svg
-                              className="block h-[18px] w-[18px] shrink-0"
-                              width="18"
-                              height="18"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              aria-hidden="true"
+                              <svg
+                                className="block h-[18px] w-[18px] shrink-0"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              className={iconBtnDel}
+                              onClick={() => removeWorkLogEntry(entry.id)}
+                              aria-label={`Удалить заявку: ${clientLabel}`}
+                              title="Удалить"
                             >
-                              <path d="M3 6h18" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              <line x1="10" y1="11" x2="10" y2="17" />
-                              <line x1="14" y1="11" x2="14" y2="17" />
-                            </svg>
-                          </button>
+                              <svg
+                                className="block h-[18px] w-[18px] shrink-0"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <path d="M3 6h18" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                              </svg>
+                            </button>
                           </div>
                         </td>
                       </tr>
