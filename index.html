@@ -21,6 +21,7 @@
           var t = s === 'light' || s === 'dark' ? s : sysDark ? 'dark' : 'light'
           document.documentElement.setAttribute('data-theme', t)
           document.documentElement.style.colorScheme = t === 'dark' ? 'dark' : 'light'
+          document.documentElement.classList.toggle('dark', t === 'dark')
         } catch (e) {}
       })()
     </script>

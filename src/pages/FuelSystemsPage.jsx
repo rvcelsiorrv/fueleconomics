@@ -3,16 +3,9 @@ import {
   loadRepairWorkLogState,
   saveRepairWorkLogState,
 } from "../lib/repairWorkLogStorage";
-import "../App.css";
 
 function makeRepairWorkLogId() {
   return `rwl-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function phoneToTelHref(phone) {
-  const digits = phone.replace(/\D/g, "");
-  if (!digits) return undefined;
-  return `tel:+${digits}`;
 }
 
 function formatDateRu(iso) {
@@ -20,6 +13,12 @@ function formatDateRu(iso) {
   const [y, m, d] = iso.split("-");
   if (!y || !m || !d) return iso;
   return `${d}.${m}.${y}`;
+}
+
+function phoneToTelHref(phone) {
+  const digits = String(phone ?? "").replace(/\D/g, "");
+  if (!digits) return undefined;
+  return `tel:+${digits}`;
 }
 
 /** Один номер ТНВД на единицу транспорта; поддержка старых записей с pumpNumbers[]. */
@@ -79,6 +78,7 @@ function makeEmptyWorkLogDraft(orgId) {
   return {
     orgId,
     clientLastName: "",
+    clientPhone: "",
     transportType: "",
     hpfpType: "",
     pumpNumber: "",
@@ -91,15 +91,12 @@ function makeEmptyWorkLogDraft(orgId) {
   };
 }
 
-function normalizeLoadedOrganization(raw, index) {
+function normalizeLoadedOrganization(raw) {
   if (!raw || typeof raw !== "object") return null;
   const id = String(raw.id ?? "").trim();
   if (!id) return null;
-  let number = parseInt(String(raw.number), 10);
-  if (!Number.isFinite(number) || number < 1) number = index + 1;
   return {
     id,
-    number,
     shortName: String(raw.shortName ?? "").trim(),
     phone: String(raw.phone ?? "").trim(),
   };
@@ -126,6 +123,7 @@ function normalizeLoadedEntry(raw) {
     id,
     orgId: String(raw.orgId ?? "").trim(),
     clientLastName: raw.clientLastName ?? "",
+    clientPhone: String(raw.clientPhone ?? "").trim(),
     transportType: raw.transportType ?? "",
     hpfpType: raw.hpfpType ?? "",
     startDate: raw.startDate ?? "",
@@ -134,8 +132,8 @@ function normalizeLoadedEntry(raw) {
     remark: raw.remark ?? "",
     installedParts: Array.isArray(raw.installedParts)
       ? raw.installedParts
-          .map((p, i) => normalizeLoadedPart(p, i))
-          .filter(Boolean)
+        .map((p, i) => normalizeLoadedPart(p, i))
+        .filter(Boolean)
       : [],
   });
   return {
@@ -149,7 +147,7 @@ function buildInitialStateFromStorage() {
   const { organizations: rawOrgs, entries: rawEntries } =
     loadRepairWorkLogState();
   const organizations = rawOrgs
-    .map((o, i) => normalizeLoadedOrganization(o, i))
+    .map((o) => normalizeLoadedOrganization(o))
     .filter(Boolean);
   const entries = rawEntries.map(normalizeLoadedEntry).filter(Boolean);
   return { organizations, entries };
@@ -175,10 +173,7 @@ export default function FuelSystemsPage() {
 
   const [workLogModalOpen, setWorkLogModalOpen] = useState(false);
   const [workLogAddOrgModalOpen, setWorkLogAddOrgModalOpen] = useState(false);
-  const [workLogNewOrg, setWorkLogNewOrg] = useState({
-    shortName: "",
-    phone: "",
-  });
+  const [workLogNewOrg, setWorkLogNewOrg] = useState({ shortName: "" });
   const [workLogEditingId, setWorkLogEditingId] = useState(null);
   const [workLogDraft, setWorkLogDraft] = useState(() =>
     makeEmptyWorkLogDraft(initialStored.organizations[0]?.id ?? ""),
@@ -269,7 +264,10 @@ export default function FuelSystemsPage() {
   }, [workLogOrganizations, workLogEntries]);
 
   const workLogOrgStatsSorted = useMemo(
-    () => [...workLogOrgStats].sort((a, b) => a.number - b.number),
+    () =>
+      [...workLogOrgStats].sort((a, b) =>
+        a.shortName.localeCompare(b.shortName, "ru"),
+      ),
     [workLogOrgStats],
   );
 
@@ -292,7 +290,7 @@ export default function FuelSystemsPage() {
   const openWorkLogModal = () => {
     const preferredId =
       selectedWorkLogSettlementId &&
-      workLogOrganizations.some((o) => o.id === selectedWorkLogSettlementId)
+        workLogOrganizations.some((o) => o.id === selectedWorkLogSettlementId)
         ? selectedWorkLogSettlementId
         : null;
     if (!preferredId) return;
@@ -311,6 +309,7 @@ export default function FuelSystemsPage() {
     setWorkLogDraft({
       orgId: entry.orgId,
       clientLastName: entry.clientLastName ?? "",
+      clientPhone: String(entry.clientPhone ?? "").trim(),
       transportType: entry.transportType ?? "",
       hpfpType: entry.hpfpType ?? "",
       startDate: entry.startDate,
@@ -333,33 +332,27 @@ export default function FuelSystemsPage() {
     setWorkLogModalOpen(false);
     setWorkLogEditingId(null);
     setWorkLogAddOrgModalOpen(false);
-    setWorkLogNewOrg({ shortName: "", phone: "" });
+    setWorkLogNewOrg({ shortName: "" });
     setWorkLogClientLastNameMissing(false);
   };
 
   const openWorkLogAddOrgModal = () => {
-    setWorkLogNewOrg({ shortName: "", phone: "" });
+    setWorkLogNewOrg({ shortName: "" });
     setWorkLogAddOrgModalOpen(true);
   };
 
   const closeWorkLogAddOrgModal = () => {
     setWorkLogAddOrgModalOpen(false);
-    setWorkLogNewOrg({ shortName: "", phone: "" });
+    setWorkLogNewOrg({ shortName: "" });
   };
 
   const submitWorkLogNewOrg = () => {
     const shortName = workLogNewOrg.shortName.trim();
-    const phone = workLogNewOrg.phone.trim();
-    if (!shortName || !phone) return;
-    const nextNum =
-      workLogOrganizations.length === 0
-        ? 1
-        : Math.max(...workLogOrganizations.map((o) => o.number)) + 1;
+    if (!shortName) return;
     const newOrg = {
       id: `rw-org-${Date.now()}`,
-      number: nextNum,
       shortName,
-      phone,
+      phone: "",
     };
     setWorkLogOrganizations((prev) => [...prev, newOrg]);
     setWorkLogDraft((d) => ({ ...d, orgId: newOrg.id }));
@@ -440,44 +433,101 @@ export default function FuelSystemsPage() {
     setWorkLogEntries((rows) => rows.filter((r) => r.id !== entryId));
   };
 
-  const workLogModalOrg = workLogOrgById[workLogDraft.orgId];
-  const workLogModalTel = workLogModalOrg
-    ? phoneToTelHref(workLogModalOrg.phone)
-    : undefined;
+  const lb =
+    "mb-1.5 block text-xs font-semibold text-zinc-500 dark:text-zinc-400";
+  const inText =
+    "w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/20";
+  const ta = `${inText} min-h-[7.5rem] resize-y leading-snug`;
+  const dtIn = `${inText} dark:[color-scheme:dark]`;
+  const sel = `${inText} cursor-pointer`;
+  const btnP =
+    "inline-flex items-center justify-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white outline-none transition hover:bg-blue-800 active:translate-y-px disabled:pointer-events-none disabled:opacity-45 dark:bg-blue-500 dark:text-zinc-950 dark:hover:bg-blue-400";
+  const btnS =
+    "inline-flex items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 outline-none transition hover:border-blue-600/25 hover:bg-zinc-50 active:translate-y-px dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800";
+  const iconBtn =
+    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 outline-none transition hover:border-blue-600/30 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-blue-400";
+  const iconBtnDel =
+    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-red-700 outline-none transition hover:bg-red-50 dark:border-red-900/40 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/50";
+
+  const modalBackdrop =
+    "fixed inset-0 z-[90] flex items-center justify-center bg-zinc-950/50 p-4 backdrop-blur-sm sm:p-5";
+  const modalPanelLg =
+    "relative w-full max-h-[min(90vh,780px)] max-w-[560px] overflow-y-auto rounded-[10px] border border-zinc-200 bg-white px-5 pb-5 pt-6 shadow-modal dark:border-zinc-700 dark:bg-zinc-900 sm:px-6 sm:pb-6 sm:pt-7";
+  const modalPanelSm =
+    "relative w-full max-h-[min(88vh,640px)] max-w-[440px] overflow-y-auto rounded-[10px] border border-zinc-200 bg-white px-5 pb-5 pt-6 shadow-modal dark:border-zinc-700 dark:bg-zinc-900 sm:px-6 sm:pb-6 sm:pt-7";
+  const modalClose =
+    "absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-md border border-zinc-200 bg-white text-zinc-700 outline-none transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700";
+  const modalTitle =
+    "mb-0 pr-10 text-lg font-semibold leading-tight tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl";
+  const modalIntro =
+    "mb-0 mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400";
+  const modalForm =
+    "mt-4 flex flex-col gap-5 sm:mt-[1.15rem] sm:gap-[1.2rem]";
+  const orgBlock =
+    "border-b border-zinc-200 pb-4 dark:border-zinc-700";
+  const orgControlsRow = "flex flex-wrap items-center gap-2";
+  const fieldHint =
+    "mt-1.5 text-xs leading-snug text-zinc-500 dark:text-zinc-400";
+  const fieldError =
+    "mt-1.5 text-xs text-red-700 dark:text-red-400";
+  const infoLine =
+    "rounded-lg border border-blue-600/15 bg-blue-50/90 px-4 py-3 text-sm leading-relaxed text-zinc-800 dark:border-blue-500/25 dark:bg-blue-950/35 dark:text-zinc-200";
+  const partsRow =
+    "flex flex-wrap items-center gap-2 border-b border-zinc-200 py-2 last:border-b-0 dark:border-zinc-700";
+  const partRemove =
+    "inline-flex cursor-pointer border-0 bg-transparent px-1 text-lg leading-none text-zinc-500 hover:rounded-md hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-400";
+  const addPartRow = "mt-2 flex flex-wrap items-center gap-2";
+  const datesGrid =
+    "grid grid-cols-1 gap-4 pt-0.5 sm:grid-cols-2 sm:gap-5";
+  const worksPartsGrid =
+    "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-4";
+  const modalFooter =
+    "mt-6 flex flex-wrap justify-end gap-3 border-t border-zinc-200 pt-5 dark:border-zinc-700";
 
   return (
-    <div className="fuel-page">
-      <header className="fuel-page__intro">
-        <p className="fuel-page__eyebrow">Автопарк · учёт</p>
-        <h1 className="fuel-page__title">
-          Топливные системы, расход и&nbsp;ТНВД
-        </h1>
-        <p className="fuel-page__lead">
-          Журнал ремонта топливных систем по населённым пунктам. Данные
-          сохраняются в браузере (localStorage) на этом устройстве.
-        </p>
+    <div className="box-border w-full max-w-none px-3 pb-14 pt-7 text-start sm:px-5">
+      <header className="relative mb-9 overflow-hidden rounded-[10px] border border-zinc-200 bg-white shadow-sheet dark:border-zinc-700 dark:bg-zinc-900 sm:px-8 sm:py-7 px-5 py-6">
+        <div
+          className="absolute bottom-0 left-0 top-0 w-[3px] bg-blue-700 dark:bg-blue-500"
+          aria-hidden
+        />
+        <div className="relative pl-1">
+          <p className="mb-2.5 text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
+            Автопарк · учёт
+          </p>
+          <h1 className="mb-3 text-pretty text-[clamp(1.45rem,3.2vw,1.95rem)] font-semibold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50">
+            Топливные системы, расход и&nbsp;ТНВД
+          </h1>
+          <p className="max-w-prose text-pretty text-[0.98rem] leading-relaxed text-zinc-600 dark:text-zinc-400">
+            Журнал ремонта топливных систем по населённым пунктам. Данные
+            сохраняются в браузере (localStorage) на этом устройстве.
+          </p>
+        </div>
       </header>
 
-      <section className="hpfp-orgs-section" aria-labelledby="hpfp-orgs-title">
-        <h2 id="hpfp-orgs-title" className="fuel-section-title">
+      <section className="mb-10" aria-labelledby="hpfp-orgs-title">
+        <h2
+          id="hpfp-orgs-title"
+          className="mb-2 border-b border-zinc-200 pb-2 text-[1.0625rem] font-semibold tracking-tight text-zinc-900 dark:border-zinc-700 dark:text-zinc-50"
+        >
           Учёт по населённым пунктам
         </h2>
-        <p className="fuel-section-desc">
+        <p className="mb-5 max-w-prose text-pretty text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
           Населённые пункты из журнала: число заявок и уникальных номеров ТНВД.
           Нажмите карточку — ниже появится журнал ремонта по этому пункту;
           повторный клик по&nbsp;той же карточке снимает выбор и скрывает
           журнал.
         </p>
-        <div className="hpfp-org-cards">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-4">
           {workLogOrgStatsSorted.length === 0 ? (
-            <div className="repair-worklog-empty repair-worklog-empty--orgs">
-              <p>
+            <div className="col-span-full rounded-lg border border-dashed border-zinc-300 bg-zinc-50/80 px-4 py-5 text-center text-sm text-zinc-600 dark:border-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-400">
+              <p className="mb-4">
                 Пока нет населённых пунктов. Добавьте первый — он появится в
                 списке, и вы сможете открыть журнал ремонта по этому пункту.
               </p>
               <button
                 type="button"
-                className="btn btn--primary"
+                className={btnP}
                 onClick={openWorkLogAddOrgModal}
               >
                 Добавить населённый пункт
@@ -488,26 +538,34 @@ export default function FuelSystemsPage() {
               <button
                 key={o.id}
                 type="button"
-                className={`hpfp-org-card hpfp-org-card--filter${
+                className={[
+                  "w-full max-w-none appearance-none rounded-[10px] border p-5 text-left font-inherit text-inherit transition",
                   selectedWorkLogSettlementId === o.id
-                    ? " hpfp-org-card--filter-active"
-                    : ""
-                }`}
+                    ? "border-blue-600/35 bg-blue-50 shadow-sheet dark:border-blue-500/40 dark:bg-blue-950/30"
+                    : "border-zinc-200 bg-white shadow-[0_1px_0_rgb(24_24_27/0.04)] hover:-translate-y-px hover:border-blue-600/25 hover:shadow dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-blue-500/30",
+                ].join(" ")}
                 aria-pressed={selectedWorkLogSettlementId === o.id}
                 onClick={() => selectWorkLogSettlement(o.id)}
               >
-                <h3 className="hpfp-org-card__name">
-                  №{o.number} — {o.shortName}
+                <h3 className="mb-3 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  {o.shortName}
                 </h3>
-                <p className="hpfp-org-card__inn">Тел. {o.phone}</p>
-                <dl className="hpfp-org-card__stats">
-                  <div>
-                    <dt>Заявок</dt>
-                    <dd>{o.applicationsCount}</dd>
+                <dl className="m-0 flex flex-wrap gap-x-6 gap-y-2 border-t border-zinc-200/80 pt-3 dark:border-zinc-700">
+                  <div className="flex flex-col gap-0.5">
+                    <dt className="m-0 text-[0.66rem] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                      Заявок
+                    </dt>
+                    <dd className="m-0 text-xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+                      {o.applicationsCount}
+                    </dd>
                   </div>
-                  <div>
-                    <dt>Номеров&nbsp;ТНВД</dt>
-                    <dd>{o.uniquePumpNumbersCount}</dd>
+                  <div className="flex flex-col gap-0.5">
+                    <dt className="m-0 text-[0.66rem] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                      Номеров&nbsp;ТНВД
+                    </dt>
+                    <dd className="m-0 text-xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+                      {o.uniquePumpNumbersCount}
+                    </dd>
                   </div>
                 </dl>
               </button>
@@ -517,14 +575,14 @@ export default function FuelSystemsPage() {
       </section>
 
       {selectedWorkLogSettlementId && selectedWorkLogSettlement ? (
-        <section
-          className="repair-worklog-section"
-          aria-labelledby="repair-worklog-title"
-        >
-          <h2 id="repair-worklog-title" className="fuel-section-title">
+        <section className="mb-10" aria-labelledby="repair-worklog-title">
+          <h2
+            id="repair-worklog-title"
+            className="mb-2 border-b border-zinc-200 pb-2 text-[1.0625rem] font-semibold tracking-tight text-zinc-900 dark:border-zinc-700 dark:text-zinc-50"
+          >
             Журнал ремонта топливных систем
           </h2>
-          <p className="fuel-section-desc">
+          <p className="mb-5 max-w-prose text-pretty text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
             Заявки по выбранному населённому пункту. Добавление и изменение
             карточки — в модальном окне (кнопки «Добавить карточку» и
             «Редактировать» в таблице). У каждой единицы транспорта в карточке
@@ -532,41 +590,99 @@ export default function FuelSystemsPage() {
             ту же карточку пункта в&nbsp;блоке «Учёт по населённым пунктам» ещё
             раз.
           </p>
-          <div className="repair-worklog-toolbar repair-worklog-toolbar--filter">
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={openWorkLogModal}
-            >
+          <div className="mb-4 flex flex-wrap items-center gap-3 gap-x-5">
+            <button type="button" className={btnP} onClick={openWorkLogModal}>
               Добавить карточку
             </button>
-            <p className="repair-worklog-toolbar__filter-hint" role="status">
+            <p className="m-0 text-sm text-zinc-600 dark:text-zinc-400" role="status">
               Журнал:{" "}
-              <strong>
-                №{selectedWorkLogSettlement.number} —{" "}
+              <strong className="font-semibold text-zinc-900 dark:text-zinc-100">
                 {selectedWorkLogSettlement.shortName}
               </strong>
             </p>
           </div>
 
-          <div className="repair-worklog-table-wrap">
-            <table className="repair-worklog-table">
+          <div className="overflow-x-auto rounded-[10px] border border-zinc-200 bg-white shadow-[0_1px_0_rgb(24_24_27/0.04)] dark:border-zinc-700 dark:bg-zinc-900">
+            <table className="w-full border-collapse text-[0.82rem]">
               <thead>
                 <tr>
-                  <th scope="col">П/п</th>
-                  <th scope="col">Клиент (фамилия)</th>
-                  <th scope="col">Телефон</th>
-                  <th scope="col">Тип транспорта</th>
-                  <th scope="col">Тип ТНВД</th>
-                  <th scope="col">Номер ТНВД</th>
-                  <th scope="col">Начало</th>
-                  <th scope="col">Окончание</th>
-                  <th scope="col">Выполненные работы</th>
-                  <th scope="col">Установленные запчасти</th>
-                  <th scope="col">Параметры ТНВД</th>
-                  <th scope="col">Примечание</th>
-                  <th scope="col">
-                    <span className="visually-hidden">Действия</span>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    П/п
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Клиент (фамилия)
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Телефон клиента
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Тип транспорта
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Тип ТНВД
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Номер ТНВД
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Начало
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Окончание
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Выполненные работы
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Установленные запчасти
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Параметры ТНВД
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    Примечание
+                  </th>
+                  <th
+                    scope="col"
+                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
+                  >
+                    <span className="sr-only">Действия</span>
                   </th>
                 </tr>
               </thead>
@@ -575,7 +691,7 @@ export default function FuelSystemsPage() {
                   <tr>
                     <td
                       colSpan={13}
-                      className="repair-worklog-table__empty-filter"
+                      className="px-3 py-5 text-center text-sm text-zinc-500 dark:text-zinc-400"
                     >
                       По этому населённому пункту заявок пока нет. Нажмите
                       «Добавить карточку».
@@ -583,8 +699,6 @@ export default function FuelSystemsPage() {
                   </tr>
                 ) : (
                   workLogEntriesForSelectedSettlement.map((entry, index) => {
-                    const org = workLogOrgById[entry.orgId];
-                    const tel = org ? phoneToTelHref(org.phone) : undefined;
                     const transportText =
                       (entry.transportType ?? "").trim() || "—";
                     const hpfpTypeText =
@@ -600,44 +714,60 @@ export default function FuelSystemsPage() {
                       normalizePumpNumberFromEntry(entry) || "—";
                     const clientLabel =
                       (entry.clientLastName ?? "").trim() || "—";
+                    const clientPhoneRaw = String(
+                      entry.clientPhone ?? "",
+                    ).trim();
+                    const clientTelHref = phoneToTelHref(clientPhoneRaw);
                     return (
-                      <tr key={entry.id}>
-                        <td>{index + 1}</td>
-                        <td className="repair-worklog-table__org repair-worklog-table__client-name">
+                      <tr
+                        key={entry.id}
+                        className="border-b border-zinc-200 last:border-b-0 hover:bg-zinc-50/80 dark:border-zinc-700 dark:hover:bg-zinc-800/40"
+                      >
+                        <td className="align-top px-3 py-2.5">{index + 1}</td>
+                        <td className="align-top px-3 py-2.5 font-semibold text-zinc-900 dark:text-zinc-100">
                           {clientLabel}
                         </td>
-                        <td>
-                          {org && tel ? (
-                            <a href={tel}>{org.phone}</a>
+                        <td className="min-w-[9.5rem] whitespace-nowrap px-3 py-2.5 align-top text-[0.8rem] tabular-nums text-zinc-900 dark:text-zinc-200">
+                          {clientPhoneRaw ? (
+                            clientTelHref ? (
+                              <a
+                                className="text-blue-700 no-underline hover:underline dark:text-blue-400"
+                                href={clientTelHref}
+                              >
+                                {clientPhoneRaw}
+                              </a>
+                            ) : (
+                              clientPhoneRaw
+                            )
                           ) : (
-                            (org?.phone ?? "—")
+                            "—"
                           )}
                         </td>
-                        <td className="repair-worklog-table__fuel-system">
+                        <td className="min-w-[14rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200">
                           {transportText}
                         </td>
-                        <td className="repair-worklog-table__hpfp-type">
+                        <td className="min-w-[11rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200">
                           {hpfpTypeText}
                         </td>
-                        <td className="repair-worklog-table__pump-numbers">
+                        <td className="min-w-[10rem] px-3 py-2.5 align-top text-[0.8rem] tabular-nums text-zinc-900 dark:text-zinc-200">
                           {pumpNumberText}
                         </td>
-                        <td className="repair-worklog-table__date">
+                        <td className="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-zinc-900 dark:text-zinc-200">
                           {formatDateRu(entry.startDate)}
                         </td>
-                        <td className="repair-worklog-table__date">
+                        <td className="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-zinc-900 dark:text-zinc-200">
                           {formatDateRu(entry.endDate)}
                         </td>
-                        <td className="repair-worklog-table__works">
+                        <td className="min-w-[12rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200">
                           {works}
                         </td>
-                        <td className="repair-worklog-table__parts">
+                        <td className="min-w-[12rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] text-zinc-900 dark:text-zinc-200">
                           {partsList.length > 0 ? (
-                            <ul className="repair-worklog-table__cell-list">
+                            <ul className="m-0 list-disc pl-[1.15em] text-left">
                               {partsList.map((p) => (
-                                <li key={p.id}>
+                                <li key={p.id} className="my-0.5 leading-snug">
                                   {p.name}
-                                  <span className="repair-worklog-table__cell-qty">
+                                  <span className="whitespace-nowrap tabular-nums">
                                     {" "}
                                     ×{p.qty}
                                   </span>
@@ -648,30 +778,33 @@ export default function FuelSystemsPage() {
                             "—"
                           )}
                         </td>
-                        <td className="repair-worklog-table__hpfp-params">
+                        <td className="min-w-[11rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] text-zinc-900 dark:text-zinc-200">
                           {hpfpParamsList.length > 0 ? (
-                            <ul className="repair-worklog-table__cell-list">
+                            <ul className="m-0 list-disc pl-[1.15em] text-left">
                               {hpfpParamsList.map((p) => (
-                                <li key={p.id}>{p.name}</li>
+                                <li key={p.id} className="my-0.5 leading-snug">
+                                  {p.name}
+                                </li>
                               ))}
                             </ul>
                           ) : (
                             "—"
                           )}
                         </td>
-                        <td className="repair-worklog-table__remark">
+                        <td className="min-w-[10rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-500 dark:text-zinc-400">
                           {remarkText}
                         </td>
-                        <td className="repair-worklog-table__actions">
+                        <td className="align-top px-3 py-2.5">
+                          <div className="flex flex-wrap items-center gap-1.5">
                           <button
                             type="button"
-                            className="repair-worklog-table__icon-btn repair-worklog-table__icon-btn--edit"
+                            className={iconBtn}
                             onClick={() => openWorkLogEditModal(entry)}
                             aria-label={`Редактировать заявку: ${clientLabel}`}
                             title="Редактировать"
                           >
                             <svg
-                              className="repair-worklog-table__icon"
+                              className="block h-[18px] w-[18px] shrink-0"
                               width="18"
                               height="18"
                               viewBox="0 0 24 24"
@@ -688,13 +821,13 @@ export default function FuelSystemsPage() {
                           </button>
                           <button
                             type="button"
-                            className="repair-worklog-table__icon-btn repair-worklog-table__icon-btn--delete"
+                            className={iconBtnDel}
                             onClick={() => removeWorkLogEntry(entry.id)}
                             aria-label={`Удалить заявку: ${clientLabel}`}
                             title="Удалить"
                           >
                             <svg
-                              className="repair-worklog-table__icon"
+                              className="block h-[18px] w-[18px] shrink-0"
                               width="18"
                               height="18"
                               viewBox="0 0 24 24"
@@ -712,6 +845,7 @@ export default function FuelSystemsPage() {
                               <line x1="14" y1="11" x2="14" y2="17" />
                             </svg>
                           </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -723,8 +857,8 @@ export default function FuelSystemsPage() {
         </section>
       ) : null}
 
-      <footer className="fuel-page__footer">
-        <p>
+      <footer className="mt-2 rounded-lg border border-zinc-200 bg-zinc-50/90 px-5 py-4 text-sm leading-relaxed text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400">
+        <p className="m-0 text-pretty">
           Данные хранятся только в этом браузере. Очистка сайта или режим
           инкогнито могут их удалить; для облачной синхронизации нужен отдельный
           бэкенд.
@@ -733,46 +867,59 @@ export default function FuelSystemsPage() {
 
       {workLogModalOpen ? (
         <div
-          className="modal-backdrop"
           role="presentation"
+          className={modalBackdrop}
           onClick={closeWorkLogModal}
         >
-            <div
-              className="modal-dialog modal-dialog--worklog"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="worklog-modal-title"
-              onClick={(e) => e.stopPropagation()}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="worklog-modal-title"
+            className={modalPanelLg}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={modalClose}
+              aria-label="Закрыть"
+              onClick={closeWorkLogModal}
             >
-              <button
-                type="button"
-                className="modal-close"
-                aria-label="Закрыть"
-                onClick={closeWorkLogModal}
-              />
-              <h2 id="worklog-modal-title" className="modal-dialog__title">
-                {workLogEditingId
-                  ? "Редактирование карточки"
-                  : "Новая карточка ремонта"}
-              </h2>
-              <p className="modal-dialog__desc repair-worklog-modal__intro">
-                {workLogEditingId
-                  ? "Измените поля и нажмите «Сохранить»."
-                  : "Заполните поля и нажмите «Добавить в журнал» — запись появится в таблице."}
-              </p>
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M18 6L6 18M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <h2 id="worklog-modal-title" className={modalTitle}>
+              {workLogEditingId
+                ? "Редактирование карточки"
+                : "Новая карточка ремонта"}
+            </h2>
+            <p className={modalIntro}>
+              {workLogEditingId
+                ? "Измените поля и нажмите «Сохранить»."
+                : "Заполните поля и нажмите «Добавить в журнал» — запись появится в таблице."}
+            </p>
 
-              <div className="repair-worklog-card__head repair-worklog-modal__head repair-worklog-modal__org-row">
-                <div className="repair-worklog-card__org-field repair-worklog-modal__org-select-wrap">
-                  <label
-                    htmlFor="worklog-modal-org"
-                    className="repair-worklog-card__org-label"
-                  >
+            <div className={modalForm}>
+              <div className={orgBlock}>
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="worklog-modal-org" className={lb}>
                     Населённый пункт
                   </label>
-                  <div className="repair-worklog-modal__org-controls">
+                  <div className={orgControlsRow}>
                     <select
                       id="worklog-modal-org"
-                      className="repair-worklog-card__select"
+                      className={`${sel} min-w-[12rem] flex-1`}
                       value={workLogDraft.orgId}
                       onChange={(e) =>
                         setWorkLogDraftField("orgId", e.target.value)
@@ -780,41 +927,26 @@ export default function FuelSystemsPage() {
                     >
                       {workLogOrganizations.map((o) => (
                         <option key={o.id} value={o.id}>
-                          №{o.number} — {o.shortName}
+                          {o.shortName}
                         </option>
                       ))}
                     </select>
                     <button
                       type="button"
-                      className="btn btn--secondary repair-worklog-modal__add-org-btn"
+                      className={`${btnS} shrink-0`}
                       onClick={openWorkLogAddOrgModal}
                     >
                       Добавить населённый пункт
                     </button>
                   </div>
                 </div>
-                <div className="repair-worklog-card__phone">
-                  <span className="repair-worklog-card__phone-label">
-                    Телефон
-                  </span>
-                  <span className="repair-worklog-card__phone-value">
-                    {workLogModalOrg && workLogModalTel ? (
-                      <a href={workLogModalTel}>{workLogModalOrg.phone}</a>
-                    ) : (
-                      (workLogModalOrg?.phone ?? "—")
-                    )}
-                  </span>
-                </div>
               </div>
 
-              <div className="repair-worklog-modal__client-field">
-                <label
-                  htmlFor="worklog-modal-client-last"
-                  className="repair-worklog-card__field-label"
-                >
+              <div>
+                <label htmlFor="worklog-modal-client-last" className={lb}>
                   Фамилия клиента{" "}
                   <abbr
-                    className="repair-worklog-modal__req"
+                    className="no-underline font-bold text-blue-700 dark:text-blue-400"
                     title="обязательно"
                   >
                     *
@@ -823,7 +955,7 @@ export default function FuelSystemsPage() {
                 <input
                   id="worklog-modal-client-last"
                   type="text"
-                  className="repair-worklog-card__input"
+                  className={inText}
                   autoComplete="family-name"
                   placeholder="Например: Иванов"
                   value={workLogDraft.clientLastName}
@@ -846,7 +978,7 @@ export default function FuelSystemsPage() {
                 {workLogClientLastNameMissing ? (
                   <p
                     id="worklog-client-last-error"
-                    className="repair-worklog-modal__field-error"
+                    className={fieldError}
                     role="alert"
                   >
                     Укажите фамилию клиента
@@ -854,25 +986,40 @@ export default function FuelSystemsPage() {
                 ) : null}
               </div>
 
-              <p className="repair-worklog-card__fuel-line">
-                <strong>Техника:</strong> населённый пункт №{" "}
-                {workLogModalOrg?.number ?? "—"}{" "}
-                {`(${workLogModalOrg?.shortName ?? "—"})`} — у каждого транспорта
-                один ТНВД: укажите тип транспорта, тип ТНВД и единственный номер
-                насоса.
+              <div>
+                <label htmlFor="worklog-modal-client-phone" className={lb}>
+                  Телефон клиента
+                </label>
+                <input
+                  id="worklog-modal-client-phone"
+                  type="tel"
+                  className={inText}
+                  autoComplete="tel"
+                  placeholder="+7 (900) 000-00-00"
+                  value={workLogDraft.clientPhone}
+                  onChange={(e) =>
+                    setWorkLogDraftField("clientPhone", e.target.value)
+                  }
+                  inputMode="tel"
+                />
+              </div>
+
+              <p className={infoLine}>
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  Техника:
+                </span>{" "}
+                населённый пункт «{workLogOrgById[workLogDraft.orgId]?.shortName ?? "—"}» — у каждого транспорта один ТНВД: укажите тип транспорта, тип
+                ТНВД и единственный номер насоса.
               </p>
 
               <div>
-                <label
-                  htmlFor="worklog-modal-transport-type"
-                  className="repair-worklog-card__field-label"
-                >
+                <label htmlFor="worklog-modal-transport-type" className={lb}>
                   Тип транспорта
                 </label>
                 <input
                   id="worklog-modal-transport-type"
                   type="text"
-                  className="repair-worklog-card__input"
+                  className={inText}
                   placeholder="Например: Mercedes Sprinter 316 CDI · К555МН99"
                   value={workLogDraft.transportType}
                   onChange={(e) =>
@@ -883,16 +1030,13 @@ export default function FuelSystemsPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="worklog-modal-hpfp-type"
-                  className="repair-worklog-card__field-label"
-                >
+                <label htmlFor="worklog-modal-hpfp-type" className={lb}>
                   Тип ТНВД
                 </label>
                 <input
                   id="worklog-modal-hpfp-type"
                   type="text"
-                  className="repair-worklog-card__input"
+                  className={inText}
                   placeholder="Например: Bosch CP3"
                   value={workLogDraft.hpfpType}
                   onChange={(e) =>
@@ -902,17 +1046,14 @@ export default function FuelSystemsPage() {
                 />
               </div>
 
-              <div className="repair-worklog-modal__pump-numbers">
-                <label
-                  htmlFor="worklog-modal-pump-number"
-                  className="repair-worklog-card__field-label"
-                >
+              <div>
+                <label htmlFor="worklog-modal-pump-number" className={lb}>
                   Номер ТНВД
                 </label>
                 <input
                   id="worklog-modal-pump-number"
                   type="text"
-                  className="repair-worklog-card__input"
+                  className={inText}
                   placeholder="Один номер насоса на эту единицу транспорта"
                   value={workLogDraft.pumpNumber}
                   onChange={(e) =>
@@ -921,27 +1062,21 @@ export default function FuelSystemsPage() {
                   autoComplete="off"
                   aria-describedby="worklog-pump-number-hint"
                 />
-                <p
-                  id="worklog-pump-number-hint"
-                  className="repair-worklog-modal__field-hint"
-                >
+                <p id="worklog-pump-number-hint" className={fieldHint}>
                   У одного транспорта может быть только один ТНВД — укажите один
                   номер.
                 </p>
               </div>
 
-              <div className="repair-worklog-card__dates">
+              <div className={datesGrid}>
                 <div>
-                  <label
-                    htmlFor="worklog-modal-start"
-                    className="repair-worklog-card__field-label"
-                  >
+                  <label htmlFor="worklog-modal-start" className={lb}>
                     Дата начала ремонта
                   </label>
                   <input
                     id="worklog-modal-start"
                     type="date"
-                    className="repair-worklog-card__date-input"
+                    className={dtIn}
                     value={workLogDraft.startDate}
                     onChange={(e) =>
                       setWorkLogDraftField("startDate", e.target.value)
@@ -949,16 +1084,13 @@ export default function FuelSystemsPage() {
                   />
                 </div>
                 <div>
-                  <label
-                    htmlFor="worklog-modal-end"
-                    className="repair-worklog-card__field-label"
-                  >
+                  <label htmlFor="worklog-modal-end" className={lb}>
                     Дата окончания ремонта
                   </label>
                   <input
                     id="worklog-modal-end"
                     type="date"
-                    className="repair-worklog-card__date-input"
+                    className={dtIn}
                     value={workLogDraft.endDate}
                     onChange={(e) =>
                       setWorkLogDraftField("endDate", e.target.value)
@@ -967,17 +1099,14 @@ export default function FuelSystemsPage() {
                 </div>
               </div>
 
-              <div className="repair-worklog-modal__works-parts">
-                <div className="repair-worklog-card__works">
-                  <label
-                    htmlFor="worklog-modal-works"
-                    className="repair-worklog-card__field-label"
-                  >
+              <div className={worksPartsGrid}>
+                <div>
+                  <label htmlFor="worklog-modal-works" className={lb}>
                     Перечень выполненных работ
                   </label>
                   <textarea
                     id="worklog-modal-works"
-                    className="repair-worklog-card__textarea"
+                    className={ta}
                     placeholder="Опишите выполненные работы…"
                     value={workLogDraft.completedWorks}
                     onChange={(e) =>
@@ -986,25 +1115,20 @@ export default function FuelSystemsPage() {
                     rows={5}
                   />
                 </div>
-                <div className="repair-worklog-modal__parts-block">
-                  <span className="repair-worklog-card__field-label">
-                    Установленные запчасти
-                  </span>
-                  <ul className="repair-worklog-modal__parts-list">
+                <div>
+                  <span className={lb}>Установленные запчасти</span>
+                  <ul className="m-0 list-none p-0">
                     {(workLogDraft.installedParts ?? []).map((p) => (
-                      <li
-                        key={p.id}
-                        className="repair-worklog-modal__parts-item"
-                      >
-                        <span className="repair-worklog-modal__parts-name">
+                      <li key={p.id} className={partsRow}>
+                        <span className="min-w-0 flex-1 text-sm text-zinc-900 dark:text-zinc-100">
                           {p.name}
                         </span>
-                        <span className="repair-worklog-modal__parts-qty">
+                        <span className="shrink-0 text-xs font-medium tabular-nums text-zinc-500 dark:text-zinc-400">
                           ×{p.qty}
                         </span>
                         <button
                           type="button"
-                          className="hpfp-number-remove"
+                          className={partRemove}
                           aria-label={`Удалить запчасть ${p.name}`}
                           onClick={() => removeWorkLogDraftPart(p.id)}
                         >
@@ -1013,10 +1137,10 @@ export default function FuelSystemsPage() {
                       </li>
                     ))}
                   </ul>
-                  <div className="repair-worklog-modal__add-part">
+                  <div className={addPartRow}>
                     <input
                       type="text"
-                      className="repair-worklog-card__input"
+                      className={`${inText} min-w-[12rem] flex-1`}
                       placeholder="Наименование запчасти"
                       value={workLogPartDraft.name}
                       onChange={(e) =>
@@ -1036,7 +1160,7 @@ export default function FuelSystemsPage() {
                     <input
                       type="number"
                       min={1}
-                      className="repair-worklog-card__input repair-worklog-modal__part-qty"
+                      className={`${inText} w-20 shrink-0`}
                       title="Количество"
                       value={workLogPartDraft.qty}
                       onChange={(e) =>
@@ -1049,7 +1173,7 @@ export default function FuelSystemsPage() {
                     />
                     <button
                       type="button"
-                      className="btn btn--secondary"
+                      className={btnS}
                       onClick={addWorkLogDraftPart}
                     >
                       Добавить
@@ -1058,22 +1182,17 @@ export default function FuelSystemsPage() {
                 </div>
               </div>
 
-              <div className="repair-worklog-modal__parts-block">
-                <span className="repair-worklog-card__field-label">
-                  Параметры ТНВД
-                </span>
-                <ul className="repair-worklog-modal__parts-list">
+              <div>
+                <span className={lb}>Параметры ТНВД</span>
+                <ul className="m-0 list-none p-0">
                   {(workLogDraft.hpfpParameters ?? []).map((p) => (
-                    <li
-                      key={p.id}
-                      className="repair-worklog-modal__parts-item repair-worklog-modal__parts-item--param"
-                    >
-                      <span className="repair-worklog-modal__parts-name">
+                    <li key={p.id} className={partsRow}>
+                      <span className="min-w-0 flex-1 text-sm text-zinc-900 dark:text-zinc-100">
                         {p.name}
                       </span>
                       <button
                         type="button"
-                        className="hpfp-number-remove"
+                        className={partRemove}
                         aria-label={`Удалить параметр ${p.name}`}
                         onClick={() => removeWorkLogDraftHpfpParam(p.id)}
                       >
@@ -1082,11 +1201,11 @@ export default function FuelSystemsPage() {
                     </li>
                   ))}
                 </ul>
-                <div className="repair-worklog-modal__add-part repair-worklog-modal__add-part--param">
+                <div className={`${addPartRow} mt-1`}>
                   <input
                     type="text"
                     id="worklog-modal-hpfp-param"
-                    className="repair-worklog-card__input"
+                    className={`${inText} min-w-[14rem] flex-1`}
                     placeholder="Например: давление на обратке 4 бар"
                     value={workLogHpfpParamDraft.name}
                     onChange={(e) =>
@@ -1105,7 +1224,7 @@ export default function FuelSystemsPage() {
                   />
                   <button
                     type="button"
-                    className="btn btn--secondary"
+                    className={btnS}
                     onClick={addWorkLogDraftHpfpParam}
                   >
                     Добавить
@@ -1113,16 +1232,13 @@ export default function FuelSystemsPage() {
                 </div>
               </div>
 
-              <div className="repair-worklog-card__works repair-worklog-modal__remark">
-                <label
-                  htmlFor="worklog-modal-remark"
-                  className="repair-worklog-card__field-label"
-                >
+              <div>
+                <label htmlFor="worklog-modal-remark" className={lb}>
                   Примечание
                 </label>
                 <textarea
                   id="worklog-modal-remark"
-                  className="repair-worklog-card__textarea repair-worklog-card__textarea--remark"
+                  className={`${inText} min-h-[4.5rem]`}
                   placeholder="Дополнительные пометки, сроки, согласования…"
                   value={workLogDraft.remark}
                   onChange={(e) =>
@@ -1131,65 +1247,73 @@ export default function FuelSystemsPage() {
                   rows={3}
                 />
               </div>
+            </div>
 
-              <div className="repair-worklog-modal-actions">
-                <button
-                  type="button"
-                  className="btn btn--secondary"
-                  onClick={closeWorkLogModal}
-                >
-                  Отмена
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  onClick={submitWorkLogFromModal}
-                >
-                  {workLogEditingId ? "Сохранить" : "Добавить в журнал"}
-                </button>
-              </div>
+            <div className={modalFooter}>
+              <button type="button" className={btnS} onClick={closeWorkLogModal}>
+                Отмена
+              </button>
+              <button
+                type="button"
+                className={btnP}
+                onClick={submitWorkLogFromModal}
+              >
+                {workLogEditingId ? "Сохранить" : "Добавить в журнал"}
+              </button>
             </div>
           </div>
+        </div>
       ) : null}
 
       {workLogAddOrgModalOpen ? (
         <div
-          className="modal-backdrop modal-backdrop--worklog-org"
           role="presentation"
+          className={`${modalBackdrop} z-[100]`}
           onClick={closeWorkLogAddOrgModal}
         >
           <div
-            className="modal-dialog modal-dialog--worklog-org"
             role="dialog"
             aria-modal="true"
             aria-labelledby="worklog-add-org-title"
+            className={modalPanelSm}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
-              className="modal-close"
+              className={modalClose}
               aria-label="Закрыть"
               onClick={closeWorkLogAddOrgModal}
-            />
-            <h2 id="worklog-add-org-title" className="modal-dialog__title">
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M18 6L6 18M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <h2 id="worklog-add-org-title" className={modalTitle}>
               Новый населённый пункт
             </h2>
-            <p className="modal-dialog__desc repair-worklog-modal__intro">
-              Укажите название населённого пункта и&nbsp;номер телефона для
-              контакта. Пункт получит следующий порядковый номер и&nbsp;сразу
-              будет выбран в карточке.
+            <p className={`${modalIntro} mb-4 sm:mb-[1.1rem]`}>
+              Введите название населённого пункта — он сразу будет выбран в
+              карточке журнала.
             </p>
             <div>
-              <label
-                htmlFor="worklog-new-org-name"
-                className="repair-worklog-card__field-label"
-              >
+              <label htmlFor="worklog-new-org-name" className={lb}>
                 Название населённого пункта
               </label>
               <input
                 id="worklog-new-org-name"
                 type="text"
-                className="repair-worklog-card__input"
+                className={inText}
                 placeholder="Например: Савоськин"
                 value={workLogNewOrg.shortName}
                 onChange={(e) =>
@@ -1201,44 +1325,19 @@ export default function FuelSystemsPage() {
                 autoComplete="organization"
               />
             </div>
-            <div className="repair-worklog-modal__new-org-phone">
-              <label
-                htmlFor="worklog-new-org-phone"
-                className="repair-worklog-card__field-label"
-              >
-                Телефон
-              </label>
-              <input
-                id="worklog-new-org-phone"
-                type="tel"
-                className="repair-worklog-card__input"
-                placeholder="+7 (900) 000-00-00"
-                value={workLogNewOrg.phone}
-                onChange={(e) =>
-                  setWorkLogNewOrg((x) => ({
-                    ...x,
-                    phone: e.target.value,
-                  }))
-                }
-                autoComplete="tel"
-              />
-            </div>
-            <div className="repair-worklog-modal-actions">
+            <div className={modalFooter}>
               <button
                 type="button"
-                className="btn btn--secondary"
+                className={btnS}
                 onClick={closeWorkLogAddOrgModal}
               >
                 Отмена
               </button>
               <button
                 type="button"
-                className="btn btn--primary"
+                className={btnP}
                 onClick={submitWorkLogNewOrg}
-                disabled={
-                  !workLogNewOrg.shortName.trim() ||
-                  !workLogNewOrg.phone.trim()
-                }
+                disabled={!workLogNewOrg.shortName.trim()}
               >
                 Добавить и выбрать
               </button>

@@ -6,6 +6,7 @@ function applyTheme(theme) {
   const root = document.documentElement;
   root.dataset.theme = theme;
   root.style.colorScheme = theme === "dark" ? "dark" : "light";
+  root.classList.toggle("dark", theme === "dark");
 }
 
 function readInitialTheme() {

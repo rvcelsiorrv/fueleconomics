@@ -2,7 +2,6 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 import MainLayout from "./layout/MainLayout";
 import FuelSystemsPage from "./pages/FuelSystemsPage";
-import "./App.css";
 
 export default function App() {
   return (
