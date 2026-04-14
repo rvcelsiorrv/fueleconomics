@@ -1,4 +1,17 @@
+import { Button, DatePicker, Input, InputNumber, Modal, Select } from "antd";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import "dayjs/locale/ru";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+dayjs.extend(customParseFormat);
+dayjs.locale("ru");
+
+function parseDraftDate(iso) {
+  if (!iso || typeof iso !== "string") return null;
+  const d = dayjs(iso, "YYYY-MM-DD", true);
+  return d.isValid() ? d : null;
+}
 import {
   loadRepairWorkLogState,
   saveRepairWorkLogState,
@@ -242,21 +255,6 @@ export default function FuelSystemsPage() {
     setWorkLogTableFilterHpfpType("");
     setWorkLogTableFilterPumpNumber("");
   }, [selectedWorkLogSettlementId]);
-
-  useEffect(() => {
-    if (!workLogModalOpen && !workLogAddOrgModalOpen) return;
-    const onKey = (e) => {
-      if (e.key !== "Escape") return;
-      if (workLogAddOrgModalOpen) {
-        setWorkLogAddOrgModalOpen(false);
-      } else {
-        setWorkLogModalOpen(false);
-        setWorkLogEditingId(null);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [workLogModalOpen, workLogAddOrgModalOpen]);
 
   const workLogOrgStats = useMemo(() => {
     return workLogOrganizations.map((o) => {
@@ -509,29 +507,13 @@ export default function FuelSystemsPage() {
   const inText =
     "w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/20";
   const ta = `${inText} min-h-[7.5rem] resize-y leading-snug`;
-  const dtIn = `${inText} dark:[color-scheme:dark]`;
-  const sel = `${inText} cursor-pointer`;
-  const btnP =
-    "inline-flex items-center justify-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white outline-none transition hover:bg-blue-800 active:translate-y-px disabled:pointer-events-none disabled:opacity-45 dark:bg-blue-500 dark:text-zinc-950 dark:hover:bg-blue-400";
-  const btnS =
-    "inline-flex items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 outline-none transition hover:border-blue-600/25 hover:bg-zinc-50 active:translate-y-px dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800";
   const iconBtn =
-    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 outline-none transition hover:border-blue-600/30 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-blue-400";
+    "inline-flex !h-9 !w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 outline-none transition hover:border-blue-600/30 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-blue-400";
   const iconBtnDel =
-    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-red-700 outline-none transition hover:bg-red-50 dark:border-red-900/40 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/50";
+    "inline-flex !h-9 !w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-red-700 outline-none transition hover:bg-red-50 dark:border-red-900/40 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/50";
 
-  const modalBackdrop =
-    "fixed inset-0 z-[90] flex items-center justify-center bg-zinc-950/50 p-4 backdrop-blur-sm sm:p-5";
-  const modalPanelLg =
-    "relative w-full max-h-[min(90vh,780px)] max-w-[560px] overflow-y-auto rounded-[10px] border border-zinc-200 bg-white px-5 pb-5 pt-6 shadow-modal dark:border-zinc-700 dark:bg-zinc-900 sm:px-6 sm:pb-6 sm:pt-7";
-  const modalPanelSm =
-    "relative w-full max-h-[min(88vh,640px)] max-w-[440px] overflow-y-auto rounded-[10px] border border-zinc-200 bg-white px-5 pb-5 pt-6 shadow-modal dark:border-zinc-700 dark:bg-zinc-900 sm:px-6 sm:pb-6 sm:pt-7";
-  const modalClose =
-    "absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-md border border-zinc-200 bg-white text-zinc-700 outline-none transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700";
-  const modalTitle =
-    "mb-0 pr-10 text-lg font-semibold leading-tight tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-xl";
   const modalIntro =
-    "mb-0 mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400";
+    "text-sm leading-relaxed text-zinc-600 dark:text-zinc-400";
   const modalForm =
     "mt-4 flex flex-col gap-5 sm:mt-[1.15rem] sm:gap-[1.2rem]";
   const orgBlock =
@@ -541,20 +523,19 @@ export default function FuelSystemsPage() {
     "mt-1.5 text-xs leading-snug text-zinc-500 dark:text-zinc-400";
   const fieldError =
     "mt-1.5 text-xs text-red-700 dark:text-red-400";
-  const infoLine =
-    "rounded-lg border border-blue-600/15 bg-blue-50/90 px-4 py-3 text-sm leading-relaxed text-zinc-800 dark:border-blue-500/25 dark:bg-blue-950/35 dark:text-zinc-200";
   const partsRow =
     "flex flex-wrap items-center gap-2 border-b border-zinc-200 py-2 last:border-b-0 dark:border-zinc-700";
   const partRemove =
-    "inline-flex cursor-pointer border-0 bg-transparent px-1 text-lg leading-none text-zinc-500 hover:rounded-md hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-400";
+    "!inline-flex !h-9 min-h-9 cursor-pointer items-center justify-center border-0 bg-transparent px-1 text-lg leading-none text-zinc-500 hover:rounded-lg hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-400";
   const addPartRow = "mt-2 flex flex-wrap items-center gap-2";
+  const clientContactGrid =
+    "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-0";
+  const vehicleHpfpRowGrid =
+    "grid grid-cols-1 gap-4 pt-0.5 md:grid-cols-3 md:gap-x-4 md:gap-y-0";
   const datesGrid =
     "grid grid-cols-1 gap-4 pt-0.5 sm:grid-cols-2 sm:gap-5";
   const worksPartsGrid =
     "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-4";
-  const modalFooter =
-    "mt-6 flex flex-wrap justify-end gap-3 border-t border-zinc-200 pt-5 dark:border-zinc-700";
-
   return (
     <div className="box-border w-full max-w-none px-3 pb-14 pt-7 text-start sm:px-5">
       <header className="relative mb-9 overflow-hidden rounded-[10px] border border-zinc-200 bg-white shadow-sheet dark:border-zinc-700 dark:bg-zinc-900 sm:px-8 sm:py-7 px-5 py-6">
@@ -564,7 +545,7 @@ export default function FuelSystemsPage() {
         />
         <div className="relative pl-1">
           <p className="mb-2.5 text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
-            Автопарк · учёт
+            Журнал ремонта · автопарк
           </p>
           <h1 className="mb-3 text-pretty text-[clamp(1.45rem,3.2vw,1.95rem)] font-semibold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50">
             Топливные системы, расход и&nbsp;ТНВД
@@ -596,21 +577,19 @@ export default function FuelSystemsPage() {
                 Пока нет населённых пунктов. Добавьте первый — он появится в
                 списке, и вы сможете открыть журнал ремонта по этому пункту.
               </p>
-              <button
-                type="button"
-                className={btnP}
-                onClick={openWorkLogAddOrgModal}
-              >
+              <Button type="primary" onClick={openWorkLogAddOrgModal}>
                 Добавить населённый пункт
-              </button>
+              </Button>
             </div>
           ) : (
             workLogOrgStatsSorted.map((o) => (
-              <button
+              <Button
                 key={o.id}
-                type="button"
+                type="default"
+                htmlType="button"
+                data-org-card
                 className={[
-                  "w-fit max-w-full min-w-0 appearance-none rounded-[10px] border p-5 text-left font-inherit text-inherit transition",
+                  "!flex !h-auto !min-h-0 w-fit max-w-full min-w-0 flex-col items-stretch rounded-lg border p-5 text-left font-inherit text-inherit shadow-none transition",
                   selectedWorkLogSettlementId === o.id
                     ? "border-blue-600/35 bg-blue-50 shadow-sheet dark:border-blue-500/40 dark:bg-blue-950/30"
                     : "border-zinc-200 bg-white shadow-[0_1px_0_rgb(28_25_23/0.04)] hover:-translate-y-px hover:border-blue-600/25 hover:shadow dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-blue-500/30",
@@ -639,7 +618,7 @@ export default function FuelSystemsPage() {
                     </dd>
                   </div>
                 </dl>
-              </button>
+              </Button>
             ))
           )}
         </div>
@@ -662,9 +641,9 @@ export default function FuelSystemsPage() {
             раз.
           </p>
           <div className="mb-4 flex flex-wrap items-center gap-3 gap-x-5">
-            <button type="button" className={btnP} onClick={openWorkLogModal}>
+            <Button type="primary" onClick={openWorkLogModal}>
               Добавить карточку
-            </button>
+            </Button>
             <p className="m-0 text-sm text-zinc-600 dark:text-zinc-400" role="status">
               Журнал:{" "}
               <strong className="font-semibold text-zinc-900 dark:text-zinc-100">
@@ -685,39 +664,39 @@ export default function FuelSystemsPage() {
               >
                 Тип транспорта
               </label>
-              <select
+              <Select
                 id="worklog-table-filter-transport"
-                className={sel}
+                className="w-full"
                 value={workLogTableFilterTransport}
-                onChange={(e) =>
-                  setWorkLogTableFilterTransport(e.target.value)
-                }
-              >
-                <option value="">Все</option>
-                {workLogTableFilterOptions.transports.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setWorkLogTableFilterTransport(v ?? "")}
+                options={[
+                  { value: "", label: "Все" },
+                  ...workLogTableFilterOptions.transports.map((t) => ({
+                    value: t,
+                    label: t,
+                  })),
+                ]}
+                popupMatchSelectWidth
+              />
             </div>
             <div className="min-w-[min(100%,12rem)] flex-1 sm:max-w-[14rem]">
               <label htmlFor="worklog-table-filter-hpfp" className={lb}>
                 Тип ТНВД
               </label>
-              <select
+              <Select
                 id="worklog-table-filter-hpfp"
-                className={sel}
+                className="w-full"
                 value={workLogTableFilterHpfpType}
-                onChange={(e) => setWorkLogTableFilterHpfpType(e.target.value)}
-              >
-                <option value="">Все</option>
-                {workLogTableFilterOptions.hpfpTypes.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setWorkLogTableFilterHpfpType(v ?? "")}
+                options={[
+                  { value: "", label: "Все" },
+                  ...workLogTableFilterOptions.hpfpTypes.map((t) => ({
+                    value: t,
+                    label: t,
+                  })),
+                ]}
+                popupMatchSelectWidth
+              />
             </div>
             <div className="min-w-[min(100%,12rem)] flex-1 sm:max-w-[14rem]">
               <label
@@ -726,37 +705,34 @@ export default function FuelSystemsPage() {
               >
                 Номер ТНВД
               </label>
-              <select
+              <Select
                 id="worklog-table-filter-pump-number"
-                className={sel}
+                className="w-full"
                 value={workLogTableFilterPumpNumber}
-                onChange={(e) =>
-                  setWorkLogTableFilterPumpNumber(e.target.value)
-                }
-              >
-                <option value="">Все</option>
-                {workLogTableFilterOptions.pumpNumbers.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setWorkLogTableFilterPumpNumber(v ?? "")}
+                options={[
+                  { value: "", label: "Все" },
+                  ...workLogTableFilterOptions.pumpNumbers.map((n) => ({
+                    value: n,
+                    label: n,
+                  })),
+                ]}
+                popupMatchSelectWidth
+              />
             </div>
             {(workLogTableFilterTransport ||
               workLogTableFilterHpfpType ||
               workLogTableFilterPumpNumber) && (
-              <button
-                type="button"
-                className={btnS}
-                onClick={() => {
-                  setWorkLogTableFilterTransport("");
-                  setWorkLogTableFilterHpfpType("");
-                  setWorkLogTableFilterPumpNumber("");
-                }}
-              >
-                Сбросить фильтры
-              </button>
-            )}
+                <Button
+                  onClick={() => {
+                    setWorkLogTableFilterTransport("");
+                    setWorkLogTableFilterHpfpType("");
+                    setWorkLogTableFilterPumpNumber("");
+                  }}
+                >
+                  Сбросить фильтры
+                </Button>
+              )}
           </div>
 
           <div className="overflow-x-auto rounded-[10px] border border-zinc-200 bg-white shadow-[0_1px_0_rgb(28_25_23/0.04)] dark:border-zinc-700 dark:bg-zinc-900">
@@ -963,55 +939,58 @@ export default function FuelSystemsPage() {
                         </td>
                         <td className="align-top px-3 py-2.5">
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <button
-                              type="button"
+                            <Button
+                              type="default"
                               className={iconBtn}
+                              icon={
+                                <svg
+                                  className="block h-[18px] w-[18px] shrink-0"
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M12 20h9" />
+                                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                                </svg>
+                              }
                               onClick={() => openWorkLogEditModal(entry)}
                               aria-label={`Редактировать заявку: ${clientLabel}`}
                               title="Редактировать"
-                            >
-                              <svg
-                                className="block h-[18px] w-[18px] shrink-0"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                              >
-                                <path d="M12 20h9" />
-                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
+                            />
+                            <Button
+                              danger
+                              type="default"
                               className={iconBtnDel}
+                              icon={
+                                <svg
+                                  className="block h-[18px] w-[18px] shrink-0"
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M3 6h18" />
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  <line x1="10" y1="11" x2="10" y2="17" />
+                                  <line x1="14" y1="11" x2="14" y2="17" />
+                                </svg>
+                              }
                               onClick={() => removeWorkLogEntry(entry.id)}
                               aria-label={`Удалить заявку: ${clientLabel}`}
                               title="Удалить"
-                            >
-                              <svg
-                                className="block h-[18px] w-[18px] shrink-0"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                              >
-                                <path d="M3 6h18" />
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                <line x1="10" y1="11" x2="10" y2="17" />
-                                <line x1="14" y1="11" x2="14" y2="17" />
-                              </svg>
-                            </button>
+                            />
                           </div>
                         </td>
                       </tr>
@@ -1032,486 +1011,419 @@ export default function FuelSystemsPage() {
         </p>
       </footer>
 
-      {workLogModalOpen ? (
-        <div
-          role="presentation"
-          className={modalBackdrop}
-          onClick={closeWorkLogModal}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="worklog-modal-title"
-            className={modalPanelLg}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className={modalClose}
-              aria-label="Закрыть"
-              onClick={closeWorkLogModal}
-            >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M18 6L6 18M6 6l12 12"
-                />
-              </svg>
-            </button>
-            <h2 id="worklog-modal-title" className={modalTitle}>
-              {workLogEditingId
-                ? "Редактирование карточки"
-                : "Новая карточка ремонта"}
-            </h2>
-            <p className={modalIntro}>
-              {workLogEditingId
-                ? "Измените поля и нажмите «Сохранить»."
-                : "Заполните поля и нажмите «Добавить в журнал» — запись появится в таблице."}
-            </p>
+      <Modal
+        open={workLogModalOpen}
+        onCancel={closeWorkLogModal}
+        title={
+          workLogEditingId
+            ? "Редактирование карточки"
+            : "Новая карточка ремонта"
+        }
+        width={720}
+        zIndex={1000}
+        centered
+        classNames={{ body: "app-scrollbar" }}
+        styles={{
+          body: {
+            maxHeight: "min(90vh, 880px)",
+            overflowY: "auto",
+            paddingTop: 12,
+            paddingBottom: 20,
+            paddingLeft: 24,
+            paddingRight: 36,
+          },
+          mask: { backdropFilter: "blur(4px)" },
+        }}
+        footer={
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button onClick={closeWorkLogModal}>Отмена</Button>
+            <Button type="primary" onClick={submitWorkLogFromModal}>
+              {workLogEditingId ? "Сохранить" : "Добавить в журнал"}
+            </Button>
+          </div>
+        }
+      >
+        <p className={`${modalIntro} mb-0 mt-1`}>
+          {workLogEditingId
+            ? "Измените поля и нажмите «Сохранить»."
+            : "Заполните поля и нажмите «Добавить в журнал» — запись появится в таблице."}
+        </p>
 
-            <div className={modalForm}>
-              <div className={orgBlock}>
-                <div className="min-w-0 flex-1">
-                  <label htmlFor="worklog-modal-org" className={lb}>
-                    Населённый пункт
-                  </label>
-                  <div className={orgControlsRow}>
-                    <select
-                      id="worklog-modal-org"
-                      className={`${sel} min-w-[12rem] flex-1`}
-                      value={workLogDraft.orgId}
-                      onChange={(e) =>
-                        setWorkLogDraftField("orgId", e.target.value)
-                      }
-                    >
-                      {workLogOrganizations.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.shortName}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      className={`${btnS} shrink-0`}
-                      onClick={openWorkLogAddOrgModal}
-                    >
-                      Добавить населённый пункт
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="worklog-modal-client-last" className={lb}>
-                  Фамилия клиента{" "}
-                  <abbr
-                    className="no-underline font-bold text-blue-700 dark:text-blue-400"
-                    title="обязательно"
-                  >
-                    *
-                  </abbr>
-                </label>
-                <input
-                  id="worklog-modal-client-last"
-                  type="text"
-                  className={inText}
-                  autoComplete="family-name"
-                  placeholder="Например: Иванов"
-                  value={workLogDraft.clientLastName}
-                  onChange={(e) => {
-                    setWorkLogDraftField("clientLastName", e.target.value);
-                    if (
-                      workLogClientLastNameMissing &&
-                      e.target.value.trim()
-                    ) {
-                      setWorkLogClientLastNameMissing(false);
-                    }
-                  }}
-                  aria-invalid={workLogClientLastNameMissing}
-                  aria-describedby={
-                    workLogClientLastNameMissing
-                      ? "worklog-client-last-error"
-                      : undefined
-                  }
-                />
-                {workLogClientLastNameMissing ? (
-                  <p
-                    id="worklog-client-last-error"
-                    className={fieldError}
-                    role="alert"
-                  >
-                    Укажите фамилию клиента
-                  </p>
-                ) : null}
-              </div>
-
-              <div>
-                <label htmlFor="worklog-modal-client-phone" className={lb}>
-                  Телефон клиента
-                </label>
-                <input
-                  id="worklog-modal-client-phone"
-                  type="tel"
-                  className={inText}
-                  autoComplete="tel"
-                  placeholder="+7 (900) 000-00-00"
-                  value={workLogDraft.clientPhone}
-                  onChange={(e) =>
-                    setWorkLogDraftField("clientPhone", e.target.value)
-                  }
-                  inputMode="tel"
-                />
-              </div>
-
-              <p className={infoLine}>
-                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  Техника:
-                </span>{" "}
-                населённый пункт «{workLogOrgById[workLogDraft.orgId]?.shortName ?? "—"}» — у каждого транспорта один ТНВД: укажите тип транспорта, тип
-                ТНВД и единственный номер насоса.
-              </p>
-
-              <div>
-                <label htmlFor="worklog-modal-transport-type" className={lb}>
-                  Тип транспорта
-                </label>
-                <input
-                  id="worklog-modal-transport-type"
-                  type="text"
-                  className={inText}
-                  placeholder="Например: Mercedes Sprinter 316 CDI · К555МН99"
-                  value={workLogDraft.transportType}
-                  onChange={(e) =>
-                    setWorkLogDraftField("transportType", e.target.value)
-                  }
-                  autoComplete="off"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="worklog-modal-hpfp-type" className={lb}>
-                  Тип ТНВД
-                </label>
-                <input
-                  id="worklog-modal-hpfp-type"
-                  type="text"
-                  className={inText}
-                  placeholder="Например: Bosch CP3"
-                  value={workLogDraft.hpfpType}
-                  onChange={(e) =>
-                    setWorkLogDraftField("hpfpType", e.target.value)
-                  }
-                  autoComplete="off"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="worklog-modal-pump-number" className={lb}>
-                  Номер ТНВД
-                </label>
-                <input
-                  id="worklog-modal-pump-number"
-                  type="text"
-                  className={inText}
-                  placeholder="Один номер насоса на эту единицу транспорта"
-                  value={workLogDraft.pumpNumber}
-                  onChange={(e) =>
-                    setWorkLogDraftField("pumpNumber", e.target.value)
-                  }
-                  autoComplete="off"
-                  aria-describedby="worklog-pump-number-hint"
-                />
-                <p id="worklog-pump-number-hint" className={fieldHint}>
-                  У одного транспорта может быть только один ТНВД — укажите один
-                  номер.
-                </p>
-              </div>
-
-              <div className={datesGrid}>
-                <div>
-                  <label htmlFor="worklog-modal-start" className={lb}>
-                    Дата начала ремонта
-                  </label>
-                  <input
-                    id="worklog-modal-start"
-                    type="date"
-                    className={dtIn}
-                    value={workLogDraft.startDate}
-                    onChange={(e) =>
-                      setWorkLogDraftField("startDate", e.target.value)
-                    }
+        <div className={modalForm}>
+          <div className={orgBlock}>
+            <div className="min-w-0 flex-1">
+              <label htmlFor="worklog-modal-org" className={lb}>
+                Населённый пункт
+              </label>
+              <div className={orgControlsRow}>
+                <div className="min-w-[12rem] flex-1">
+                  <Select
+                    id="worklog-modal-org"
+                    className="w-full"
+                    value={workLogDraft.orgId}
+                    onChange={(v) => setWorkLogDraftField("orgId", v)}
+                    options={workLogOrganizations.map((o) => ({
+                      value: o.id,
+                      label: o.shortName,
+                    }))}
                   />
                 </div>
-                <div>
-                  <label htmlFor="worklog-modal-end" className={lb}>
-                    Дата окончания ремонта
-                  </label>
-                  <input
-                    id="worklog-modal-end"
-                    type="date"
-                    className={dtIn}
-                    value={workLogDraft.endDate}
-                    onChange={(e) =>
-                      setWorkLogDraftField("endDate", e.target.value)
-                    }
-                  />
-                </div>
+                <Button className="shrink-0" onClick={openWorkLogAddOrgModal}>
+                  Добавить населённый пункт
+                </Button>
               </div>
-
-              <div className={worksPartsGrid}>
-                <div>
-                  <label htmlFor="worklog-modal-works" className={lb}>
-                    Перечень выполненных работ
-                  </label>
-                  <textarea
-                    id="worklog-modal-works"
-                    className={ta}
-                    placeholder="Опишите выполненные работы…"
-                    value={workLogDraft.completedWorks}
-                    onChange={(e) =>
-                      setWorkLogDraftField("completedWorks", e.target.value)
-                    }
-                    rows={5}
-                  />
-                </div>
-                <div>
-                  <span className={lb}>Установленные запчасти</span>
-                  <ul className="m-0 list-none p-0">
-                    {(workLogDraft.installedParts ?? []).map((p) => (
-                      <li key={p.id} className={partsRow}>
-                        <span className="min-w-0 flex-1 text-sm text-zinc-900 dark:text-zinc-100">
-                          {p.name}
-                        </span>
-                        <span className="shrink-0 text-xs font-medium tabular-nums text-zinc-500 dark:text-zinc-400">
-                          ×{p.qty}
-                        </span>
-                        <button
-                          type="button"
-                          className={partRemove}
-                          aria-label={`Удалить запчасть ${p.name}`}
-                          onClick={() => removeWorkLogDraftPart(p.id)}
-                        >
-                          ×
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className={addPartRow}>
-                    <input
-                      type="text"
-                      className={`${inText} min-w-[12rem] flex-1`}
-                      placeholder="Наименование запчасти"
-                      value={workLogPartDraft.name}
-                      onChange={(e) =>
-                        setWorkLogPartDraft((x) => ({
-                          ...x,
-                          name: e.target.value,
-                        }))
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addWorkLogDraftPart();
-                        }
-                      }}
-                      aria-label="Наименование запчасти"
-                    />
-                    <input
-                      type="number"
-                      min={1}
-                      className={`${inText} w-20 shrink-0`}
-                      title="Количество"
-                      value={workLogPartDraft.qty}
-                      onChange={(e) =>
-                        setWorkLogPartDraft((x) => ({
-                          ...x,
-                          qty: e.target.value,
-                        }))
-                      }
-                      aria-label="Количество"
-                    />
-                    <button
-                      type="button"
-                      className={btnS}
-                      onClick={addWorkLogDraftPart}
-                    >
-                      Добавить
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <span className={lb}>Параметры ТНВД</span>
-                <ul className="m-0 list-none p-0">
-                  {(workLogDraft.hpfpParameters ?? []).map((p) => (
-                    <li key={p.id} className={partsRow}>
-                      <span className="min-w-0 flex-1 text-sm text-zinc-900 dark:text-zinc-100">
-                        {p.name}
-                      </span>
-                      <button
-                        type="button"
-                        className={partRemove}
-                        aria-label={`Удалить параметр ${p.name}`}
-                        onClick={() => removeWorkLogDraftHpfpParam(p.id)}
-                      >
-                        ×
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <div className={`${addPartRow} mt-1`}>
-                  <input
-                    type="text"
-                    id="worklog-modal-hpfp-param"
-                    className={`${inText} min-w-[14rem] flex-1`}
-                    placeholder="Например: давление на обратке 4 бар"
-                    value={workLogHpfpParamDraft.name}
-                    onChange={(e) =>
-                      setWorkLogHpfpParamDraft((x) => ({
-                        ...x,
-                        name: e.target.value,
-                      }))
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addWorkLogDraftHpfpParam();
-                      }
-                    }}
-                    aria-label="Текст параметра ТНВД"
-                  />
-                  <button
-                    type="button"
-                    className={btnS}
-                    onClick={addWorkLogDraftHpfpParam}
-                  >
-                    Добавить
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="worklog-modal-remark" className={lb}>
-                  Примечание
-                </label>
-                <textarea
-                  id="worklog-modal-remark"
-                  className={`${inText} min-h-[4.5rem]`}
-                  placeholder="Дополнительные пометки, сроки, согласования…"
-                  value={workLogDraft.remark}
-                  onChange={(e) =>
-                    setWorkLogDraftField("remark", e.target.value)
-                  }
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <div className={modalFooter}>
-              <button type="button" className={btnS} onClick={closeWorkLogModal}>
-                Отмена
-              </button>
-              <button
-                type="button"
-                className={btnP}
-                onClick={submitWorkLogFromModal}
-              >
-                {workLogEditingId ? "Сохранить" : "Добавить в журнал"}
-              </button>
             </div>
           </div>
-        </div>
-      ) : null}
 
-      {workLogAddOrgModalOpen ? (
-        <div
-          role="presentation"
-          className={`${modalBackdrop} z-[100]`}
-          onClick={closeWorkLogAddOrgModal}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="worklog-add-org-title"
-            className={modalPanelSm}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className={modalClose}
-              aria-label="Закрыть"
-              onClick={closeWorkLogAddOrgModal}
-            >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M18 6L6 18M6 6l12 12"
-                />
-              </svg>
-            </button>
-            <h2 id="worklog-add-org-title" className={modalTitle}>
-              Новый населённый пункт
-            </h2>
-            <p className={`${modalIntro} mb-4 sm:mb-[1.1rem]`}>
-              Введите название населённого пункта — он сразу будет выбран в
-              карточке журнала.
-            </p>
-            <div>
-              <label htmlFor="worklog-new-org-name" className={lb}>
-                Название населённого пункта
+          <div className={clientContactGrid}>
+            <div className="min-w-0">
+              <label htmlFor="worklog-modal-client-last" className={lb}>
+                Фамилия клиента{" "}
+                <abbr
+                  className="no-underline font-bold text-blue-700 dark:text-blue-400"
+                  title="обязательно"
+                >
+                  *
+                </abbr>
               </label>
-              <input
-                id="worklog-new-org-name"
-                type="text"
-                className={inText}
-                placeholder="Например: Савоськин"
-                value={workLogNewOrg.shortName}
-                onChange={(e) =>
-                  setWorkLogNewOrg((x) => ({
-                    ...x,
-                    shortName: e.target.value,
-                  }))
+              <Input
+                id="worklog-modal-client-last"
+                autoComplete="family-name"
+                placeholder="Например: Иванов"
+                value={workLogDraft.clientLastName}
+                onChange={(e) => {
+                  setWorkLogDraftField("clientLastName", e.target.value);
+                  if (
+                    workLogClientLastNameMissing &&
+                    e.target.value.trim()
+                  ) {
+                    setWorkLogClientLastNameMissing(false);
+                  }
+                }}
+                status={workLogClientLastNameMissing ? "error" : undefined}
+                aria-invalid={workLogClientLastNameMissing}
+                aria-describedby={
+                  workLogClientLastNameMissing
+                    ? "worklog-client-last-error"
+                    : undefined
                 }
-                autoComplete="organization"
+              />
+              {workLogClientLastNameMissing ? (
+                <p
+                  id="worklog-client-last-error"
+                  className={fieldError}
+                  role="alert"
+                >
+                  Укажите фамилию клиента
+                </p>
+              ) : null}
+            </div>
+
+            <div className="min-w-0">
+              <label htmlFor="worklog-modal-client-phone" className={lb}>
+                Телефон клиента
+              </label>
+              <Input
+                id="worklog-modal-client-phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+7 (900) 000-00-00"
+                value={workLogDraft.clientPhone}
+                onChange={(e) =>
+                  setWorkLogDraftField("clientPhone", e.target.value)
+                }
+                inputMode="tel"
               />
             </div>
-            <div className={modalFooter}>
-              <button
-                type="button"
-                className={btnS}
-                onClick={closeWorkLogAddOrgModal}
-              >
-                Отмена
-              </button>
-              <button
-                type="button"
-                className={btnP}
-                onClick={submitWorkLogNewOrg}
-                disabled={!workLogNewOrg.shortName.trim()}
-              >
-                Добавить и выбрать
-              </button>
+          </div>
+
+          <div className={vehicleHpfpRowGrid}>
+            <div className="min-w-0">
+              <label htmlFor="worklog-modal-transport-type" className={lb}>
+                Тип транспорта
+              </label>
+              <Input
+                id="worklog-modal-transport-type"
+                placeholder="Например: Mercedes Sprinter 316 CDI · К555МН99"
+                value={workLogDraft.transportType}
+                onChange={(e) =>
+                  setWorkLogDraftField("transportType", e.target.value)
+                }
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <label htmlFor="worklog-modal-hpfp-type" className={lb}>
+                Тип ТНВД
+              </label>
+              <Input
+                id="worklog-modal-hpfp-type"
+                placeholder="Например: Bosch CP3"
+                value={workLogDraft.hpfpType}
+                onChange={(e) =>
+                  setWorkLogDraftField("hpfpType", e.target.value)
+                }
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <label htmlFor="worklog-modal-pump-number" className={lb}>
+                Номер ТНВД
+              </label>
+              <Input
+                id="worklog-modal-pump-number"
+                placeholder="Один номер насоса на эту единицу транспорта"
+                value={workLogDraft.pumpNumber}
+                onChange={(e) =>
+                  setWorkLogDraftField("pumpNumber", e.target.value)
+                }
+                autoComplete="off"
+                aria-describedby="worklog-pump-number-hint"
+              />
+              <p id="worklog-pump-number-hint" className={fieldHint}>
+                У одного транспорта может быть только один ТНВД — укажите один
+                номер.
+              </p>
             </div>
           </div>
+
+          <div className={datesGrid}>
+            <div>
+              <label htmlFor="worklog-modal-start" className={lb}>
+                Дата начала ремонта
+              </label>
+              <DatePicker
+                id="worklog-modal-start"
+                className="w-full"
+                format="DD.MM.YYYY"
+                placeholder="Выберите дату"
+                allowClear
+                value={parseDraftDate(workLogDraft.startDate)}
+                onChange={(d) =>
+                  setWorkLogDraftField(
+                    "startDate",
+                    d ? d.format("YYYY-MM-DD") : "",
+                  )
+                }
+              />
+            </div>
+            <div>
+              <label htmlFor="worklog-modal-end" className={lb}>
+                Дата окончания ремонта
+              </label>
+              <DatePicker
+                id="worklog-modal-end"
+                className="w-full"
+                format="DD.MM.YYYY"
+                placeholder="Выберите дату"
+                allowClear
+                value={parseDraftDate(workLogDraft.endDate)}
+                onChange={(d) =>
+                  setWorkLogDraftField(
+                    "endDate",
+                    d ? d.format("YYYY-MM-DD") : "",
+                  )
+                }
+              />
+            </div>
+          </div>
+
+          <div className={worksPartsGrid}>
+            <div>
+              <label htmlFor="worklog-modal-works" className={lb}>
+                Перечень выполненных работ
+              </label>
+              <textarea
+                id="worklog-modal-works"
+                className={ta}
+                placeholder="Опишите выполненные работы…"
+                value={workLogDraft.completedWorks}
+                onChange={(e) =>
+                  setWorkLogDraftField("completedWorks", e.target.value)
+                }
+                rows={5}
+              />
+            </div>
+            <div>
+              <span className={lb}>Установленные запчасти</span>
+              <ul className="m-0 list-none p-0">
+                {(workLogDraft.installedParts ?? []).map((p) => (
+                  <li key={p.id} className={partsRow}>
+                    <span className="min-w-0 flex-1 text-sm text-zinc-900 dark:text-zinc-100">
+                      {p.name}
+                    </span>
+                    <span className="shrink-0 text-xs font-medium tabular-nums text-zinc-500 dark:text-zinc-400">
+                      ×{p.qty}
+                    </span>
+                    <Button
+                      type="text"
+                      className={partRemove}
+                      aria-label={`Удалить запчасть ${p.name}`}
+                      onClick={() => removeWorkLogDraftPart(p.id)}
+                    >
+                      ×
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+              <div className={addPartRow}>
+                <Input
+                  className="min-w-[12rem] flex-1"
+                  placeholder="Наименование запчасти"
+                  value={workLogPartDraft.name}
+                  onChange={(e) =>
+                    setWorkLogPartDraft((x) => ({
+                      ...x,
+                      name: e.target.value,
+                    }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addWorkLogDraftPart();
+                    }
+                  }}
+                  aria-label="Наименование запчасти"
+                />
+                <InputNumber
+                  min={1}
+                  className="w-20 shrink-0"
+                  title="Количество"
+                  controls={false}
+                  value={
+                    Math.max(1, parseInt(String(workLogPartDraft.qty), 10) || 1)
+                  }
+                  onChange={(v) =>
+                    setWorkLogPartDraft((x) => ({
+                      ...x,
+                      qty:
+                        v != null && v !== ""
+                          ? String(Math.max(1, Number(v)))
+                          : "1",
+                    }))
+                  }
+                  aria-label="Количество"
+                />
+                <Button onClick={addWorkLogDraftPart}>Добавить</Button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <span className={lb}>Параметры ТНВД</span>
+            <ul className="m-0 list-none p-0">
+              {(workLogDraft.hpfpParameters ?? []).map((p) => (
+                <li key={p.id} className={partsRow}>
+                  <span className="min-w-0 flex-1 text-sm text-zinc-900 dark:text-zinc-100">
+                    {p.name}
+                  </span>
+                  <Button
+                    type="text"
+                    className={partRemove}
+                    aria-label={`Удалить параметр ${p.name}`}
+                    onClick={() => removeWorkLogDraftHpfpParam(p.id)}
+                  >
+                    ×
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            <div className={`${addPartRow} mt-1`}>
+              <Input
+                id="worklog-modal-hpfp-param"
+                className="min-w-[14rem] flex-1"
+                placeholder="Например: давление на обратке 4 бар"
+                value={workLogHpfpParamDraft.name}
+                onChange={(e) =>
+                  setWorkLogHpfpParamDraft((x) => ({
+                    ...x,
+                    name: e.target.value,
+                  }))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addWorkLogDraftHpfpParam();
+                  }
+                }}
+                aria-label="Текст параметра ТНВД"
+              />
+              <Button onClick={addWorkLogDraftHpfpParam}>Добавить</Button>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="worklog-modal-remark" className={lb}>
+              Примечание
+            </label>
+            <textarea
+              id="worklog-modal-remark"
+              className={`${inText} min-h-[4.5rem]`}
+              placeholder="Дополнительные пометки, сроки, согласования…"
+              value={workLogDraft.remark}
+              onChange={(e) =>
+                setWorkLogDraftField("remark", e.target.value)
+              }
+              rows={3}
+            />
+          </div>
         </div>
-      ) : null}
+      </Modal>
+
+      <Modal
+        open={workLogAddOrgModalOpen}
+        onCancel={closeWorkLogAddOrgModal}
+        title="Новый населённый пункт"
+        width={440}
+        zIndex={1100}
+        centered
+        classNames={{ body: "app-scrollbar" }}
+        styles={{
+          body: {
+            paddingLeft: 24,
+            paddingRight: 36,
+            paddingTop: 8,
+            paddingBottom: 8,
+          },
+          mask: { backdropFilter: "blur(4px)" },
+        }}
+        footer={
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button onClick={closeWorkLogAddOrgModal}>Отмена</Button>
+            <Button
+              type="primary"
+              onClick={submitWorkLogNewOrg}
+              disabled={!workLogNewOrg.shortName.trim()}
+            >
+              Добавить и выбрать
+            </Button>
+          </div>
+        }
+      >
+        <p className={`${modalIntro} mb-4 sm:mb-[1.1rem]`}>
+          Введите название населённого пункта — он сразу будет выбран в
+          карточке журнала.
+        </p>
+        <div>
+          <label htmlFor="worklog-new-org-name" className={lb}>
+            Название населённого пункта
+          </label>
+          <Input
+            id="worklog-new-org-name"
+            placeholder="Например: Савоськин"
+            value={workLogNewOrg.shortName}
+            onChange={(e) =>
+              setWorkLogNewOrg((x) => ({
+                ...x,
+                shortName: e.target.value,
+              }))
+            }
+            autoComplete="organization"
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

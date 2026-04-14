@@ -22,3 +22,119 @@
     @apply bg-blue-600/25 text-zinc-900 dark:bg-blue-400/30 dark:text-zinc-50;
   }
 }
+
+/*
+  Единая высота (36px) и скругление (8px) для antd: токены + явная фиксация,
+  чтобы Input/Select/DatePicker/InputNumber/Button не расходились из‑за rem и внутренних отступов.
+*/
+@layer components {
+  .ant-input-affix-wrapper:not(.ant-input-textarea-affix-wrapper) {
+    min-height: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    box-sizing: border-box;
+    align-items: center;
+  }
+
+  .ant-input-affix-wrapper:not(.ant-input-textarea-affix-wrapper) .ant-input {
+    line-height: 22px;
+  }
+
+  .ant-select:not(.ant-select-customize-input) .ant-select-selector {
+    min-height: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+  }
+
+  .ant-select-single .ant-select-selector .ant-select-selection-item,
+  .ant-select-single .ant-select-selector .ant-select-selection-placeholder {
+    line-height: 22px !important;
+  }
+
+  .ant-picker.ant-picker-outlined {
+    min-height: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    box-sizing: border-box;
+    padding-block: 0;
+  }
+
+  .ant-input-number.ant-input-number-outlined {
+    min-height: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    box-sizing: border-box;
+  }
+
+  .ant-input-number .ant-input-number-input {
+    height: 34px;
+    line-height: 22px;
+  }
+
+  /* Кнопки одной высоты с полями: не трогаем type="text" и карточки пункта (data-org-card) */
+  .ant-modal .ant-btn.ant-btn-default,
+  .ant-modal .ant-btn.ant-btn-primary,
+  .ant-modal .ant-btn.ant-btn-dashed,
+  section .ant-btn.ant-btn-primary,
+  section .ant-btn.ant-btn-dashed,
+  section .ant-btn.ant-btn-default:not([data-org-card]) {
+    min-height: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    box-sizing: border-box;
+    padding-block: 0 !important;
+    line-height: 22px !important;
+  }
+
+  section .ant-btn.ant-btn-icon-only.ant-btn-default:not([data-org-card]),
+  section .ant-btn.ant-btn-icon-only.ant-btn-primary,
+  section .ant-btn.ant-btn-icon-only.ant-btn-dashed {
+    width: 36px !important;
+    min-width: 36px !important;
+    padding-inline: 0 !important;
+  }
+}
+
+/* Тонкий скролл без системных стрелок; согласован с акцентом темы (teal) */
+@layer utilities {
+  .app-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(120 113 108 / 0.35) transparent;
+  }
+
+  .dark .app-scrollbar {
+    scrollbar-color: rgb(168 162 158 / 0.28) transparent;
+  }
+
+  .app-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-track {
+    margin-block: 6px;
+    background: transparent;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    background-color: rgb(120 113 108 / 0.22);
+    transition: background-color 0.15s ease;
+  }
+
+  .app-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(13 148 136 / 0.38);
+  }
+
+  .dark .app-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgb(168 162 158 / 0.22);
+  }
+
+  .dark .app-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(45 212 191 / 0.35);
+  }
+}
