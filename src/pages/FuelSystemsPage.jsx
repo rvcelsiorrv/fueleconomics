@@ -592,7 +592,7 @@ export default function FuelSystemsPage() {
                   "!flex !h-auto !min-h-0 w-fit max-w-full min-w-0 flex-col items-stretch rounded-lg border p-5 text-left font-inherit text-inherit shadow-none transition",
                   selectedWorkLogSettlementId === o.id
                     ? "border-blue-600/35 bg-blue-50 shadow-sheet dark:border-blue-500/40 dark:bg-blue-950/30"
-                    : "border-zinc-200 bg-white shadow-[0_1px_0_rgb(28_25_23/0.04)] hover:-translate-y-px hover:border-blue-600/25 hover:shadow dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-blue-500/30",
+                    : "border-zinc-200 bg-white shadow-[0_1px_0_rgb(28_25_23/0.04)] hover:border-blue-600/25 hover:shadow dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-blue-500/30",
                 ].join(" ")}
                 aria-pressed={selectedWorkLogSettlementId === o.id}
                 onClick={() => selectWorkLogSettlement(o.id)}
@@ -1003,14 +1003,6 @@ export default function FuelSystemsPage() {
         </section>
       ) : null}
 
-      <footer className="mt-2 rounded-lg border border-zinc-200 bg-zinc-50/90 px-5 py-4 text-sm leading-relaxed text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400">
-        <p className="m-0 text-pretty">
-          Данные хранятся только в этом браузере. Очистка сайта или режим
-          инкогнито могут их удалить; для облачной синхронизации нужен отдельный
-          бэкенд.
-        </p>
-      </footer>
-
       <Modal
         open={workLogModalOpen}
         onCancel={closeWorkLogModal}
@@ -1028,9 +1020,7 @@ export default function FuelSystemsPage() {
             maxHeight: "min(90vh, 880px)",
             overflowY: "auto",
             paddingTop: 12,
-            paddingBottom: 20,
-            paddingLeft: 24,
-            paddingRight: 36,
+            paddingBottom: 12,
           },
           mask: { backdropFilter: "blur(4px)" },
         }}
@@ -1182,10 +1172,6 @@ export default function FuelSystemsPage() {
                 autoComplete="off"
                 aria-describedby="worklog-pump-number-hint"
               />
-              <p id="worklog-pump-number-hint" className={fieldHint}>
-                У одного транспорта может быть только один ТНВД — укажите один
-                номер.
-              </p>
             </div>
           </div>
 
@@ -1382,8 +1368,6 @@ export default function FuelSystemsPage() {
         classNames={{ body: "app-scrollbar" }}
         styles={{
           body: {
-            paddingLeft: 24,
-            paddingRight: 36,
             paddingTop: 8,
             paddingBottom: 8,
           },
