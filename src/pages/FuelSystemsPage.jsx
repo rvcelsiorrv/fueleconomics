@@ -613,7 +613,7 @@ export default function FuelSystemsPage() {
                   "w-fit max-w-full min-w-0 appearance-none rounded-[10px] border p-5 text-left font-inherit text-inherit transition",
                   selectedWorkLogSettlementId === o.id
                     ? "border-blue-600/35 bg-blue-50 shadow-sheet dark:border-blue-500/40 dark:bg-blue-950/30"
-                    : "border-zinc-200 bg-white shadow-[0_1px_0_rgb(24_24_27/0.04)] hover:-translate-y-px hover:border-blue-600/25 hover:shadow dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-blue-500/30",
+                    : "border-zinc-200 bg-white shadow-[0_1px_0_rgb(28_25_23/0.04)] hover:-translate-y-px hover:border-blue-600/25 hover:shadow dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-blue-500/30",
                 ].join(" ")}
                 aria-pressed={selectedWorkLogSettlementId === o.id}
                 onClick={() => selectWorkLogSettlement(o.id)}
@@ -759,7 +759,7 @@ export default function FuelSystemsPage() {
             )}
           </div>
 
-          <div className="overflow-x-auto rounded-[10px] border border-zinc-200 bg-white shadow-[0_1px_0_rgb(24_24_27/0.04)] dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="overflow-x-auto rounded-[10px] border border-zinc-200 bg-white shadow-[0_1px_0_rgb(28_25_23/0.04)] dark:border-zinc-700 dark:bg-zinc-900">
             <table className="w-full border-collapse text-[0.82rem]">
               <thead>
                 <tr>

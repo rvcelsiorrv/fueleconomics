@@ -10,7 +10,7 @@ export default function MainLayout() {
         <div className="mx-auto grid max-w-none grid-cols-[auto_1fr_auto] grid-rows-[auto_auto] items-center gap-x-4 gap-y-3 px-3 py-3.5 sm:px-5 min-[900px]:grid-cols-[auto_auto_1fr_auto] min-[900px]:grid-rows-1 min-[900px]:gap-x-5">
           <div className="col-start-1 row-start-1 flex items-center gap-2.5">
             <span
-              className="relative h-[34px] w-[34px] shrink-0 rounded-lg border border-zinc-200 bg-white shadow-[inset_0_0_0_1px_rgb(29_78_216/0.12)] dark:border-zinc-600 dark:bg-zinc-900 dark:shadow-[inset_0_0_0_1px_rgb(96_165_250/0.16)]"
+              className="relative h-[34px] w-[34px] shrink-0 rounded-lg border border-zinc-200 bg-white shadow-[inset_0_0_0_1px_rgb(15_118_110/0.14)] dark:border-zinc-600 dark:bg-zinc-900 dark:shadow-[inset_0_0_0_1px_rgb(45_212_191/0.18)]"
               aria-hidden
             >
               <span className="absolute inset-x-1.5 inset-y-2 rounded-sm bg-gradient-to-b from-blue-600 to-blue-700 opacity-95 dark:from-blue-400 dark:to-blue-500" />
