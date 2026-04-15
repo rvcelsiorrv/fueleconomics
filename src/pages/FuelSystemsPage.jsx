@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import "dayjs/locale/ru";
 import { useEffect, useMemo, useRef, useState } from "react";
+import DataTable from "../components/DataTable";
 
 dayjs.extend(customParseFormat);
 dayjs.locale("ru");
@@ -145,8 +146,8 @@ function normalizeLoadedEntry(raw) {
     remark: raw.remark ?? "",
     installedParts: Array.isArray(raw.installedParts)
       ? raw.installedParts
-        .map((p, i) => normalizeLoadedPart(p, i))
-        .filter(Boolean)
+          .map((p, i) => normalizeLoadedPart(p, i))
+          .filter(Boolean)
       : [],
   });
   return {
@@ -302,13 +303,9 @@ export default function FuelSystemsPage() {
       if (p) pumpNumbers.add(p);
     }
     return {
-      transports: [...transports].sort((a, b) =>
-        a.localeCompare(b, "ru"),
-      ),
+      transports: [...transports].sort((a, b) => a.localeCompare(b, "ru")),
       hpfpTypes: [...hpfpTypes].sort((a, b) => a.localeCompare(b, "ru")),
-      pumpNumbers: [...pumpNumbers].sort((a, b) =>
-        a.localeCompare(b, "ru"),
-      ),
+      pumpNumbers: [...pumpNumbers].sort((a, b) => a.localeCompare(b, "ru")),
     };
   }, [workLogEntriesForSelectedSettlement]);
 
@@ -335,7 +332,9 @@ export default function FuelSystemsPage() {
         if (h !== workLogTableFilterHpfpType) return false;
       }
       if (workLogTableFilterPumpNumber) {
-        if (normalizePumpNumberFromEntry(entry) !== workLogTableFilterPumpNumber)
+        if (
+          normalizePumpNumberFromEntry(entry) !== workLogTableFilterPumpNumber
+        )
           return false;
       }
       return true;
@@ -359,7 +358,7 @@ export default function FuelSystemsPage() {
   const openWorkLogModal = () => {
     const preferredId =
       selectedWorkLogSettlementId &&
-        workLogOrganizations.some((o) => o.id === selectedWorkLogSettlementId)
+      workLogOrganizations.some((o) => o.id === selectedWorkLogSettlementId)
         ? selectedWorkLogSettlementId
         : null;
     if (!preferredId) return;
@@ -512,17 +511,13 @@ export default function FuelSystemsPage() {
   const iconBtnDel =
     "inline-flex !h-9 !w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-red-700 outline-none transition hover:bg-red-50 dark:border-red-900/40 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/50";
 
-  const modalIntro =
-    "text-sm leading-relaxed text-zinc-600 dark:text-zinc-400";
-  const modalForm =
-    "mt-4 flex flex-col gap-5 sm:mt-[1.15rem] sm:gap-[1.2rem]";
-  const orgBlock =
-    "border-b border-zinc-200 pb-4 dark:border-zinc-700";
+  const modalIntro = "text-sm leading-relaxed text-zinc-600 dark:text-zinc-400";
+  const modalForm = "mt-4 flex flex-col gap-5 sm:mt-[1.15rem] sm:gap-[1.2rem]";
+  const orgBlock = "border-b border-zinc-200 pb-4 dark:border-zinc-700";
   const orgControlsRow = "flex flex-wrap items-center gap-2";
   const fieldHint =
     "mt-1.5 text-xs leading-snug text-zinc-500 dark:text-zinc-400";
-  const fieldError =
-    "mt-1.5 text-xs text-red-700 dark:text-red-400";
+  const fieldError = "mt-1.5 text-xs text-red-700 dark:text-red-400";
   const partsRow =
     "flex flex-wrap items-center gap-2 border-b border-zinc-200 py-2 last:border-b-0 dark:border-zinc-700";
   const partRemove =
@@ -532,10 +527,242 @@ export default function FuelSystemsPage() {
     "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-0";
   const vehicleHpfpRowGrid =
     "grid grid-cols-1 gap-4 pt-0.5 md:grid-cols-3 md:gap-x-4 md:gap-y-0";
-  const datesGrid =
-    "grid grid-cols-1 gap-4 pt-0.5 sm:grid-cols-2 sm:gap-5";
+  const datesGrid = "grid grid-cols-1 gap-4 pt-0.5 sm:grid-cols-2 sm:gap-5";
   const worksPartsGrid =
     "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-4";
+  const workLogTableHeaderClassName =
+    "whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug";
+
+  const workLogTableColumns = useMemo(
+    () => [
+      {
+        key: "index",
+        header: "П/п",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName: "align-top px-3 py-2.5",
+        render: (_, index) => index + 1,
+      },
+      {
+        key: "clientLastName",
+        header: "Клиент (фамилия)",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "align-top px-3 py-2.5 font-semibold text-zinc-900 dark:text-zinc-100",
+        render: (entry) => (entry.clientLastName ?? "").trim() || "—",
+      },
+      {
+        key: "clientPhone",
+        header: "Телефон клиента",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "min-w-[9.5rem] whitespace-nowrap px-3 py-2.5 align-top text-[0.8rem] tabular-nums text-zinc-900 dark:text-zinc-200",
+        render: (entry) => {
+          const clientPhoneRaw = String(entry.clientPhone ?? "").trim();
+          if (!clientPhoneRaw) return "—";
+          const clientTelHref = phoneToTelHref(clientPhoneRaw);
+          return clientTelHref ? (
+            <a
+              className="text-blue-700 no-underline hover:underline dark:text-blue-400"
+              href={clientTelHref}
+            >
+              {clientPhoneRaw}
+            </a>
+          ) : (
+            clientPhoneRaw
+          );
+        },
+      },
+      {
+        key: "transportType",
+        header: "Тип транспорта",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "min-w-[14rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200",
+        render: (entry) => (entry.transportType ?? "").trim() || "—",
+      },
+      {
+        key: "hpfpType",
+        header: "Тип ТНВД",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "min-w-[11rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200",
+        render: (entry) => (entry.hpfpType ?? "").trim() || "—",
+      },
+      {
+        key: "pumpNumber",
+        header: "Номер ТНВД",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "min-w-[10rem] px-3 py-2.5 align-top text-[0.8rem] tabular-nums text-zinc-900 dark:text-zinc-200",
+        render: (entry) => normalizePumpNumberFromEntry(entry) || "—",
+      },
+      {
+        key: "startDate",
+        header: "Начало",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-zinc-900 dark:text-zinc-200",
+        render: (entry) => formatDateRu(entry.startDate),
+      },
+      {
+        key: "endDate",
+        header: "Окончание",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-zinc-900 dark:text-zinc-200",
+        render: (entry) => formatDateRu(entry.endDate),
+      },
+      {
+        key: "completedWorks",
+        header: "Выполненные работы",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "min-w-[12rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200",
+        render: (entry) => entry.completedWorks.trim() || "—",
+      },
+      {
+        key: "installedParts",
+        header: "Установленные запчасти",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "min-w-[12rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] text-zinc-900 dark:text-zinc-200",
+        render: (entry) => {
+          const partsList = entry.installedParts ?? [];
+          if (partsList.length === 0) return "—";
+          return (
+            <ul className="m-0 list-disc pl-[1.15em] text-left">
+              {partsList.map((p) => (
+                <li key={p.id} className="my-0.5 leading-snug">
+                  {p.name}
+                  <span className="whitespace-nowrap tabular-nums">
+                    {" "}
+                    ×{p.qty}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          );
+        },
+      },
+      {
+        key: "hpfpParameters",
+        header: "Параметры ТНВД",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "min-w-[11rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] text-zinc-900 dark:text-zinc-200",
+        render: (entry) => {
+          const hpfpParamsList = normalizeHpfpParametersFromEntry(entry);
+          if (hpfpParamsList.length === 0) return "—";
+          return (
+            <ul className="m-0 list-disc pl-[1.15em] text-left">
+              {hpfpParamsList.map((p) => (
+                <li key={p.id} className="my-0.5 leading-snug">
+                  {p.name}
+                </li>
+              ))}
+            </ul>
+          );
+        },
+      },
+      {
+        key: "remark",
+        header: "Примечание",
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName:
+          "min-w-[10rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-500 dark:text-zinc-400",
+        render: (entry) => (entry.remark ?? "").trim() || "—",
+      },
+      {
+        key: "actions",
+        header: <span className="sr-only">Действия</span>,
+        headerClassName: workLogTableHeaderClassName,
+        cellClassName: "align-top px-3 py-2.5 min-w-[6.2rem] whitespace-nowrap",
+        render: (entry) => {
+          const clientLabel = (entry.clientLastName ?? "").trim() || "—";
+          return (
+            <div className="flex flex-nowrap items-center gap-1.5">
+              <Button
+                type="default"
+                className={iconBtn}
+                icon={
+                  <svg
+                    className="block h-[18px] w-[18px] shrink-0"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                }
+                onClick={() => openWorkLogEditModal(entry)}
+                aria-label={`Редактировать заявку: ${clientLabel}`}
+                title="Редактировать"
+              />
+              <Button
+                danger
+                type="default"
+                className={iconBtnDel}
+                icon={
+                  <svg
+                    className="block h-[18px] w-[18px] shrink-0"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
+                }
+                onClick={() => removeWorkLogEntry(entry.id)}
+                aria-label={`Удалить заявку: ${clientLabel}`}
+                title="Удалить"
+              />
+            </div>
+          );
+        },
+      },
+    ],
+    [
+      formatDateRu,
+      iconBtn,
+      iconBtnDel,
+      normalizeHpfpParametersFromEntry,
+      normalizePumpNumberFromEntry,
+      openWorkLogEditModal,
+      phoneToTelHref,
+      removeWorkLogEntry,
+    ],
+  );
+
+  const workLogTableData = useMemo(() => {
+    if (workLogEntriesForSelectedSettlement.length === 0) return [];
+    if (workLogEntriesFilteredForTable.length === 0) return [];
+    return workLogEntriesFilteredForTable;
+  }, [
+    workLogEntriesFilteredForTable,
+    workLogEntriesForSelectedSettlement.length,
+  ]);
+
+  const workLogTableEmptyMessage =
+    workLogEntriesForSelectedSettlement.length === 0
+      ? "По этому населённому пункту заявок пока нет. Нажмите «Добавить карточку»."
+      : "Нет записей с выбранными фильтрами. Измените условия или нажмите «Сбросить фильтры».";
   return (
     <div className="box-border w-full max-w-none px-3 pb-14 pt-7 text-start sm:px-5">
       <header className="relative mb-9 overflow-hidden rounded-[10px] border border-zinc-200 bg-white shadow-sheet dark:border-zinc-700 dark:bg-zinc-900 sm:px-8 sm:py-7 px-5 py-6">
@@ -597,7 +824,7 @@ export default function FuelSystemsPage() {
                 aria-pressed={selectedWorkLogSettlementId === o.id}
                 onClick={() => selectWorkLogSettlement(o.id)}
               >
-                <h3 className="mb-3 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                <h3 className="mb-3 break-words text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                   {o.shortName}
                 </h3>
                 <dl className="m-0 flex flex-wrap gap-x-6 gap-y-2 border-t border-zinc-200/80 pt-3 dark:border-zinc-700">
@@ -625,7 +852,10 @@ export default function FuelSystemsPage() {
       </section>
 
       {selectedWorkLogSettlementId && selectedWorkLogSettlement ? (
-        <section className="mb-10" aria-labelledby="repair-worklog-title">
+        <section
+          className="mb-10 min-w-0 max-w-full overflow-x-hidden"
+          aria-labelledby="repair-worklog-title"
+        >
           <h2
             id="repair-worklog-title"
             className="mb-2 border-b border-zinc-200 pb-2 text-[1.0625rem] font-semibold tracking-tight text-zinc-900 dark:border-zinc-700 dark:text-zinc-50"
@@ -644,9 +874,12 @@ export default function FuelSystemsPage() {
             <Button type="primary" onClick={openWorkLogModal}>
               Добавить карточку
             </Button>
-            <p className="m-0 text-sm text-zinc-600 dark:text-zinc-400" role="status">
+            <p
+              className="m-0 min-w-0 break-words text-sm text-zinc-600 dark:text-zinc-400"
+              role="status"
+            >
               Журнал:{" "}
-              <strong className="font-semibold text-zinc-900 dark:text-zinc-100">
+              <strong className="break-all font-semibold text-zinc-900 dark:text-zinc-100">
                 {selectedWorkLogSettlement.shortName}
               </strong>
             </p>
@@ -658,10 +891,7 @@ export default function FuelSystemsPage() {
             aria-label="Фильтры таблицы журнала"
           >
             <div className="min-w-[min(100%,12rem)] flex-1 sm:max-w-[14rem]">
-              <label
-                htmlFor="worklog-table-filter-transport"
-                className={lb}
-              >
+              <label htmlFor="worklog-table-filter-transport" className={lb}>
                 Тип транспорта
               </label>
               <Select
@@ -699,10 +929,7 @@ export default function FuelSystemsPage() {
               />
             </div>
             <div className="min-w-[min(100%,12rem)] flex-1 sm:max-w-[14rem]">
-              <label
-                htmlFor="worklog-table-filter-pump-number"
-                className={lb}
-              >
+              <label htmlFor="worklog-table-filter-pump-number" className={lb}>
                 Номер ТНВД
               </label>
               <Select
@@ -723,283 +950,25 @@ export default function FuelSystemsPage() {
             {(workLogTableFilterTransport ||
               workLogTableFilterHpfpType ||
               workLogTableFilterPumpNumber) && (
-                <Button
-                  onClick={() => {
-                    setWorkLogTableFilterTransport("");
-                    setWorkLogTableFilterHpfpType("");
-                    setWorkLogTableFilterPumpNumber("");
-                  }}
-                >
-                  Сбросить фильтры
-                </Button>
-              )}
+              <Button
+                onClick={() => {
+                  setWorkLogTableFilterTransport("");
+                  setWorkLogTableFilterHpfpType("");
+                  setWorkLogTableFilterPumpNumber("");
+                }}
+              >
+                Сбросить фильтры
+              </Button>
+            )}
           </div>
 
-          <div className="overflow-x-auto rounded-[10px] border border-zinc-200 bg-white shadow-[0_1px_0_rgb(28_25_23/0.04)] dark:border-zinc-700 dark:bg-zinc-900">
-            <table className="w-full border-collapse text-[0.82rem]">
-              <thead>
-                <tr>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    П/п
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Клиент (фамилия)
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Телефон клиента
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Тип транспорта
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Тип ТНВД
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Номер ТНВД
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Начало
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Окончание
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Выполненные работы
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Установленные запчасти
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Параметры ТНВД
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    Примечание
-                  </th>
-                  <th
-                    scope="col"
-                    className="whitespace-nowrap bg-gradient-to-b from-zinc-50 to-zinc-100/90 px-3 py-2.5 text-left text-[0.66rem] font-semibold uppercase tracking-wide text-zinc-500 dark:from-zinc-800/90 dark:to-zinc-900 dark:text-zinc-400 max-sm:whitespace-normal max-sm:leading-snug"
-                  >
-                    <span className="sr-only">Действия</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {workLogEntriesForSelectedSettlement.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={13}
-                      className="px-3 py-5 text-center text-sm text-zinc-500 dark:text-zinc-400"
-                    >
-                      По этому населённому пункту заявок пока нет. Нажмите
-                      «Добавить карточку».
-                    </td>
-                  </tr>
-                ) : workLogEntriesFilteredForTable.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={13}
-                      className="px-3 py-5 text-center text-sm text-zinc-500 dark:text-zinc-400"
-                    >
-                      Нет записей с выбранными фильтрами. Измените условия или
-                      нажмите «Сбросить фильтры».
-                    </td>
-                  </tr>
-                ) : (
-                  workLogEntriesFilteredForTable.map((entry, index) => {
-                    const transportText =
-                      (entry.transportType ?? "").trim() || "—";
-                    const hpfpTypeText =
-                      (entry.hpfpType ?? "").trim() || "—";
-                    const works = entry.completedWorks.trim() || "—";
-                    const hpfpParamsList = normalizeHpfpParametersFromEntry(
-                      entry,
-                    );
-                    const remarkText =
-                      (entry.remark ?? "").trim() || "—";
-                    const partsList = entry.installedParts ?? [];
-                    const pumpNumberText =
-                      normalizePumpNumberFromEntry(entry) || "—";
-                    const clientLabel =
-                      (entry.clientLastName ?? "").trim() || "—";
-                    const clientPhoneRaw = String(
-                      entry.clientPhone ?? "",
-                    ).trim();
-                    const clientTelHref = phoneToTelHref(clientPhoneRaw);
-                    return (
-                      <tr
-                        key={entry.id}
-                        className="border-b border-zinc-200 last:border-b-0 hover:bg-zinc-50/80 dark:border-zinc-700 dark:hover:bg-zinc-800/40"
-                      >
-                        <td className="align-top px-3 py-2.5">{index + 1}</td>
-                        <td className="align-top px-3 py-2.5 font-semibold text-zinc-900 dark:text-zinc-100">
-                          {clientLabel}
-                        </td>
-                        <td className="min-w-[9.5rem] whitespace-nowrap px-3 py-2.5 align-top text-[0.8rem] tabular-nums text-zinc-900 dark:text-zinc-200">
-                          {clientPhoneRaw ? (
-                            clientTelHref ? (
-                              <a
-                                className="text-blue-700 no-underline hover:underline dark:text-blue-400"
-                                href={clientTelHref}
-                              >
-                                {clientPhoneRaw}
-                              </a>
-                            ) : (
-                              clientPhoneRaw
-                            )
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td className="min-w-[14rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200">
-                          {transportText}
-                        </td>
-                        <td className="min-w-[11rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200">
-                          {hpfpTypeText}
-                        </td>
-                        <td className="min-w-[10rem] px-3 py-2.5 align-top text-[0.8rem] tabular-nums text-zinc-900 dark:text-zinc-200">
-                          {pumpNumberText}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-zinc-900 dark:text-zinc-200">
-                          {formatDateRu(entry.startDate)}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-zinc-900 dark:text-zinc-200">
-                          {formatDateRu(entry.endDate)}
-                        </td>
-                        <td className="min-w-[12rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200">
-                          {works}
-                        </td>
-                        <td className="min-w-[12rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] text-zinc-900 dark:text-zinc-200">
-                          {partsList.length > 0 ? (
-                            <ul className="m-0 list-disc pl-[1.15em] text-left">
-                              {partsList.map((p) => (
-                                <li key={p.id} className="my-0.5 leading-snug">
-                                  {p.name}
-                                  <span className="whitespace-nowrap tabular-nums">
-                                    {" "}
-                                    ×{p.qty}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td className="min-w-[11rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] text-zinc-900 dark:text-zinc-200">
-                          {hpfpParamsList.length > 0 ? (
-                            <ul className="m-0 list-disc pl-[1.15em] text-left">
-                              {hpfpParamsList.map((p) => (
-                                <li key={p.id} className="my-0.5 leading-snug">
-                                  {p.name}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td className="min-w-[10rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-500 dark:text-zinc-400">
-                          {remarkText}
-                        </td>
-                        <td className="align-top px-3 py-2.5">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <Button
-                              type="default"
-                              className={iconBtn}
-                              icon={
-                                <svg
-                                  className="block h-[18px] w-[18px] shrink-0"
-                                  width="18"
-                                  height="18"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M12 20h9" />
-                                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                </svg>
-                              }
-                              onClick={() => openWorkLogEditModal(entry)}
-                              aria-label={`Редактировать заявку: ${clientLabel}`}
-                              title="Редактировать"
-                            />
-                            <Button
-                              danger
-                              type="default"
-                              className={iconBtnDel}
-                              icon={
-                                <svg
-                                  className="block h-[18px] w-[18px] shrink-0"
-                                  width="18"
-                                  height="18"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M3 6h18" />
-                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                  <line x1="10" y1="11" x2="10" y2="17" />
-                                  <line x1="14" y1="11" x2="14" y2="17" />
-                                </svg>
-                              }
-                              onClick={() => removeWorkLogEntry(entry.id)}
-                              aria-label={`Удалить заявку: ${clientLabel}`}
-                              title="Удалить"
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={workLogTableColumns}
+            data={workLogTableData}
+            rowKey="id"
+            emptyMessage={workLogTableEmptyMessage}
+            rowClassName="border-b border-zinc-200 last:border-b-0 hover:bg-zinc-50/80 dark:border-zinc-700 dark:hover:bg-zinc-800/40"
+          />
         </section>
       ) : null}
 
@@ -1083,10 +1052,7 @@ export default function FuelSystemsPage() {
                 value={workLogDraft.clientLastName}
                 onChange={(e) => {
                   setWorkLogDraftField("clientLastName", e.target.value);
-                  if (
-                    workLogClientLastNameMissing &&
-                    e.target.value.trim()
-                  ) {
+                  if (workLogClientLastNameMissing && e.target.value.trim()) {
                     setWorkLogClientLastNameMissing(false);
                   }
                 }}
@@ -1278,9 +1244,10 @@ export default function FuelSystemsPage() {
                   className="w-20 shrink-0"
                   title="Количество"
                   controls={false}
-                  value={
-                    Math.max(1, parseInt(String(workLogPartDraft.qty), 10) || 1)
-                  }
+                  value={Math.max(
+                    1,
+                    parseInt(String(workLogPartDraft.qty), 10) || 1,
+                  )}
                   onChange={(v) =>
                     setWorkLogPartDraft((x) => ({
                       ...x,
@@ -1349,9 +1316,7 @@ export default function FuelSystemsPage() {
               className={`${inText} min-h-[4.5rem]`}
               placeholder="Дополнительные пометки, сроки, согласования…"
               value={workLogDraft.remark}
-              onChange={(e) =>
-                setWorkLogDraftField("remark", e.target.value)
-              }
+              onChange={(e) => setWorkLogDraftField("remark", e.target.value)}
               rows={3}
             />
           </div>
@@ -1387,8 +1352,8 @@ export default function FuelSystemsPage() {
         }
       >
         <p className={`${modalIntro} mb-4 sm:mb-[1.1rem]`}>
-          Введите название населённого пункта — он сразу будет выбран в
-          карточке журнала.
+          Введите название населённого пункта — он сразу будет выбран в карточке
+          журнала.
         </p>
         <div>
           <label htmlFor="worklog-new-org-name" className={lb}>
