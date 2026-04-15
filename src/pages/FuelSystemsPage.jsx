@@ -1,4 +1,12 @@
-import { Button, DatePicker, Input, InputNumber, Modal, Select } from "antd";
+import {
+  AutoComplete,
+  Button,
+  DatePicker,
+  Input,
+  InputNumber,
+  Modal,
+  Select,
+} from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import "dayjs/locale/ru";
@@ -345,6 +353,21 @@ export default function FuelSystemsPage() {
     workLogTableFilterHpfpType,
     workLogTableFilterPumpNumber,
   ]);
+
+  const workLogPumpNumberOptionsForDraft = useMemo(() => {
+    const uniqueNumbers = new Set();
+    const draftOrgId = String(workLogDraft.orgId ?? "").trim();
+    for (const entry of workLogEntries) {
+      if (draftOrgId && entry.orgId !== draftOrgId) continue;
+      const pumpNumber = normalizePumpNumberFromEntry(entry);
+      if (pumpNumber) uniqueNumbers.add(pumpNumber);
+    }
+    const currentDraftPumpNumber = String(workLogDraft.pumpNumber ?? "").trim();
+    if (currentDraftPumpNumber) uniqueNumbers.add(currentDraftPumpNumber);
+    return [...uniqueNumbers]
+      .sort((a, b) => a.localeCompare(b, "ru"))
+      .map((value) => ({ value }));
+  }, [workLogDraft.orgId, workLogDraft.pumpNumber, workLogEntries]);
 
   const selectedWorkLogSettlement =
     selectedWorkLogSettlementId != null
@@ -1128,16 +1151,24 @@ export default function FuelSystemsPage() {
               <label htmlFor="worklog-modal-pump-number" className={lb}>
                 Номер ТНВД
               </label>
-              <Input
-                id="worklog-modal-pump-number"
-                placeholder="Один номер насоса на эту единицу транспорта"
+              <AutoComplete
+                className="w-full"
+                options={workLogPumpNumberOptionsForDraft}
                 value={workLogDraft.pumpNumber}
-                onChange={(e) =>
-                  setWorkLogDraftField("pumpNumber", e.target.value)
+                onChange={(value) => setWorkLogDraftField("pumpNumber", value)}
+                filterOption={(inputValue, option) =>
+                  String(option?.value ?? "")
+                    .toLowerCase()
+                    .includes(inputValue.toLowerCase())
                 }
-                autoComplete="off"
-                aria-describedby="worklog-pump-number-hint"
-              />
+              >
+                <Input
+                  id="worklog-modal-pump-number"
+                  placeholder="Выберите существующий или введите новый номер"
+                  autoComplete="off"
+                  aria-describedby="worklog-pump-number-hint"
+                />
+              </AutoComplete>
             </div>
           </div>
 
