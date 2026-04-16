@@ -5,6 +5,9 @@ import { useTheme } from "../context/ThemeContext";
 
 export default function MainLayout() {
   const { theme, toggleTheme } = useTheme();
+  const loadMockData = () => {
+    window.dispatchEvent(new CustomEvent("fuel-systems:load-mock"));
+  };
 
   return (
     <div className="min-h-full w-full bg-zinc-100 font-sans text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
@@ -22,7 +25,14 @@ export default function MainLayout() {
             </span>
           </div>
 
-          <div className="shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              size="small"
+              onClick={loadMockData}
+              className="!h-8 rounded-md border-zinc-300 px-2 text-xs font-medium dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+            >
+              Mock
+            </Button>
             <Button
               type="text"
               className="grid !h-9 !w-9 min-h-9 min-w-9 place-items-center rounded-lg border border-transparent text-zinc-900 hover:!border-zinc-200 hover:!bg-zinc-100 dark:text-zinc-100 dark:hover:!border-zinc-700 dark:hover:!bg-zinc-900"

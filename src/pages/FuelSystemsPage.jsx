@@ -192,6 +192,12 @@ export default function FuelSystemsPage() {
   );
 
   const skipNextPersist = useRef(true);
+  const mockModeEnabledRef = useRef(false);
+  const mockBackupRef = useRef({
+    organizations: [],
+    entries: [],
+    selectedSettlementId: null,
+  });
 
   const [workLogModalOpen, setWorkLogModalOpen] = useState(false);
   const [workLogAddOrgModalOpen, setWorkLogAddOrgModalOpen] = useState(false);
@@ -218,6 +224,418 @@ export default function FuelSystemsPage() {
     useState("");
   const [workLogTableFilterPumpNumber, setWorkLogTableFilterPumpNumber] =
     useState("");
+
+  useEffect(() => {
+    const handleLoadMock = () => {
+      if (mockModeEnabledRef.current) {
+        const backup = mockBackupRef.current;
+        const restoredOrganizations = Array.isArray(backup.organizations)
+          ? backup.organizations
+          : [];
+        const restoredEntries = Array.isArray(backup.entries) ? backup.entries : [];
+        const restoredSelectedSettlementId =
+          backup.selectedSettlementId &&
+          restoredOrganizations.some((o) => o.id === backup.selectedSettlementId)
+            ? backup.selectedSettlementId
+            : restoredOrganizations[0]?.id ?? null;
+
+        setWorkLogOrganizations(restoredOrganizations);
+        setWorkLogEntries(restoredEntries);
+        setSelectedWorkLogSettlementId(restoredSelectedSettlementId);
+        setWorkLogDraft(makeEmptyWorkLogDraft(restoredSelectedSettlementId ?? ""));
+        setWorkLogPartDraft({ name: "", qty: "1" });
+        setWorkLogHpfpParamDraft({ name: "" });
+        setWorkLogTableFilterTransport("");
+        setWorkLogTableFilterHpfpType("");
+        setWorkLogTableFilterPumpNumber("");
+        setWorkLogModalOpen(false);
+        setWorkLogAddOrgModalOpen(false);
+        setWorkLogEditingId(null);
+        setWorkLogNewOrg({ shortName: "" });
+        setWorkLogClientLastNameMissing(false);
+        mockModeEnabledRef.current = false;
+        return;
+      }
+
+      mockBackupRef.current = {
+        organizations: workLogOrganizations.map((o) => ({ ...o })),
+        entries: workLogEntries.map((e) => ({
+          ...e,
+          hpfpParameters: Array.isArray(e.hpfpParameters)
+            ? e.hpfpParameters.map((p) => ({ ...p }))
+            : [],
+          installedParts: Array.isArray(e.installedParts)
+            ? e.installedParts.map((p) => ({ ...p }))
+            : [],
+        })),
+        selectedSettlementId: selectedWorkLogSettlementId ?? null,
+      };
+
+      const mockOrganizations = [
+        { id: "rw-org-mock-1", shortName: "Савоськин", phone: "" },
+        { id: "rw-org-mock-2", shortName: "Борисовка", phone: "" },
+        { id: "rw-org-mock-3", shortName: "Котовск", phone: "" },
+        { id: "rw-org-mock-4", shortName: "Моршанск", phone: "" },
+        { id: "rw-org-mock-5", shortName: "Рассказово", phone: "" },
+        { id: "rw-org-mock-6", shortName: "Уварово", phone: "" },
+      ];
+
+      const mockEntries = [
+        {
+          id: "rwl-mock-1",
+          orgId: "rw-org-mock-1",
+          clientLastName: "Иванов",
+          clientPhone: "+7 (903) 111-22-33",
+          transportType: "КамАЗ 65115 · А123ВС68",
+          hpfpType: "Bosch CP3",
+          pumpNumber: "0 445 010 776",
+          startDate: "2026-04-03",
+          endDate: "2026-04-05",
+          completedWorks: "Диагностика, промывка, замена плунжерной пары.",
+          hpfpParameters: [
+            { id: "whp-mock-1", name: "Давление: 1350 бар" },
+            { id: "whp-mock-2", name: "Подача: 92 мм3/такт" },
+          ],
+          remark: "Рекомендована замена фильтра через 5 000 км.",
+          installedParts: [
+            { id: "wlp-mock-1", name: "Плунжерная пара", qty: 1 },
+            { id: "wlp-mock-2", name: "Ремкомплект уплотнений", qty: 1 },
+          ],
+        },
+        {
+          id: "rwl-mock-2",
+          orgId: "rw-org-mock-2",
+          clientLastName: "Петров",
+          clientPhone: "+7 (905) 444-55-66",
+          transportType: "Mercedes Sprinter 316 CDI · Н456ОР68",
+          hpfpType: "Delphi DFP1",
+          pumpNumber: "9424A070A",
+          startDate: "2026-04-07",
+          endDate: "2026-04-08",
+          completedWorks: "Чистка, замер стендом, калибровка.",
+          hpfpParameters: [{ id: "whp-mock-3", name: "Подача в норме" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-3", name: "Клапан дозатора", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-3",
+          orgId: "rw-org-mock-2",
+          clientLastName: "Сидоров",
+          clientPhone: "+7 (902) 777-88-99",
+          transportType: "МТЗ-82 · 68ТК3344",
+          hpfpType: "ЯЗДА",
+          pumpNumber: "806.1111005-40",
+          startDate: "2026-04-10",
+          endDate: "2026-04-12",
+          completedWorks: "Переборка секций ТНВД, регулировка подачи.",
+          hpfpParameters: [{ id: "whp-mock-4", name: "Опережение впрыска: 24°" }],
+          remark: "Наблюдать за расходом топлива первую неделю.",
+          installedParts: [{ id: "wlp-mock-4", name: "Прокладка крышки", qty: 2 }],
+        },
+        {
+          id: "rwl-mock-4",
+          orgId: "rw-org-mock-3",
+          clientLastName: "Козлов",
+          clientPhone: "+7 (910) 120-30-40",
+          transportType: "ГАЗель Next · Р221УХ68",
+          hpfpType: "Bosch CP1",
+          pumpNumber: "0 445 010 537",
+          startDate: "2026-04-13",
+          endDate: "2026-04-14",
+          completedWorks: "Замена дозирующего клапана, проверка герметичности.",
+          hpfpParameters: [{ id: "whp-mock-5", name: "Тест герметичности пройден" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-5", name: "Дозирующий клапан", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-5",
+          orgId: "rw-org-mock-3",
+          clientLastName: "Фролов",
+          clientPhone: "+7 (953) 200-30-40",
+          transportType: "Hyundai HD78 · К902МН68",
+          hpfpType: "Denso HP3",
+          pumpNumber: "294000-1150",
+          startDate: "2026-04-15",
+          endDate: "2026-04-18",
+          completedWorks: "Комплексная переборка, стендовая настройка.",
+          hpfpParameters: [
+            { id: "whp-mock-6", name: "Подача: 88 мм3/такт" },
+            { id: "whp-mock-7", name: "Равномерность секций в допуске" },
+          ],
+          remark: "Повторный контроль через месяц.",
+          installedParts: [
+            { id: "wlp-mock-6", name: "Плунжер", qty: 2 },
+            { id: "wlp-mock-7", name: "Шайба регулировочная", qty: 4 },
+          ],
+        },
+        {
+          id: "rwl-mock-6",
+          orgId: "rw-org-mock-3",
+          clientLastName: "Леонов",
+          clientPhone: "+7 (901) 310-41-52",
+          transportType: "John Deere 7830 · 68АА0012",
+          hpfpType: "Stanadyne",
+          pumpNumber: "DB4-9933",
+          startDate: "2026-04-19",
+          endDate: "2026-04-20",
+          completedWorks: "Промывка, замена уплотнений, настройка холостого хода.",
+          hpfpParameters: [{ id: "whp-mock-8", name: "ХХ стабилен" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-8", name: "Комплект уплотнений", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-7",
+          orgId: "rw-org-mock-4",
+          clientLastName: "Зимин",
+          clientPhone: "+7 (920) 555-66-77",
+          transportType: "ПАЗ 3205 · М334КЕ68",
+          hpfpType: "ЯЗДА",
+          pumpNumber: "773.1111005",
+          startDate: "2026-04-02",
+          endDate: "2026-04-04",
+          completedWorks: "Ремонт секций, замена толкателя.",
+          hpfpParameters: [{ id: "whp-mock-9", name: "Давление в норме" }],
+          remark: "Рекомендуется проверка форсунок.",
+          installedParts: [{ id: "wlp-mock-9", name: "Толкатель", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-8",
+          orgId: "rw-org-mock-4",
+          clientLastName: "Карпов",
+          clientPhone: "+7 (952) 777-11-22",
+          transportType: "ЛиАЗ 5292 · Е901ОТ68",
+          hpfpType: "Bosch CP4",
+          pumpNumber: "0 445 020 090",
+          startDate: "2026-04-06",
+          endDate: "2026-04-09",
+          completedWorks: "Очистка системы, замена топливного регулятора.",
+          hpfpParameters: [{ id: "whp-mock-10", name: "Режим работы стабилен" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-10", name: "Регулятор давления", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-9",
+          orgId: "rw-org-mock-4",
+          clientLastName: "Мельников",
+          clientPhone: "+7 (980) 420-50-60",
+          transportType: "MAN TGS · Т882АХ68",
+          hpfpType: "Bosch CP3",
+          pumpNumber: "0 445 020 165",
+          startDate: "2026-04-11",
+          endDate: "2026-04-13",
+          completedWorks: "Ремонт привода ТНВД, стендовые испытания.",
+          hpfpParameters: [{ id: "whp-mock-11", name: "Подача в допуске" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-11", name: "Втулка привода", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-10",
+          orgId: "rw-org-mock-4",
+          clientLastName: "Орлов",
+          clientPhone: "+7 (950) 123-45-67",
+          transportType: "Volvo FH · О777РЕ68",
+          hpfpType: "Delphi DFP3",
+          pumpNumber: "R9044Z120A",
+          startDate: "2026-04-14",
+          endDate: "2026-04-16",
+          completedWorks: "Диагностика, замена плунжерной пары, калибровка.",
+          hpfpParameters: [{ id: "whp-mock-12", name: "Отклонений не выявлено" }],
+          remark: "Контрольный осмотр через 10 дней.",
+          installedParts: [{ id: "wlp-mock-12", name: "Плунжерная пара", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-11",
+          orgId: "rw-org-mock-5",
+          clientLastName: "Гаврилов",
+          clientPhone: "+7 (915) 987-65-43",
+          transportType: "К-744Р · 68КХ9087",
+          hpfpType: "Motorpal",
+          pumpNumber: "PP6M10P1f",
+          startDate: "2026-04-17",
+          endDate: "2026-04-19",
+          completedWorks: "Регулировка секций и угла опережения.",
+          hpfpParameters: [{ id: "whp-mock-13", name: "Угол: 23°" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-13", name: "Регулировочный винт", qty: 2 }],
+        },
+        {
+          id: "rwl-mock-12",
+          orgId: "rw-org-mock-5",
+          clientLastName: "Егоров",
+          clientPhone: "+7 (930) 321-44-55",
+          transportType: "МАЗ 5440 · Х112ЕН68",
+          hpfpType: "Bosch CP3",
+          pumpNumber: "0 445 010 996",
+          startDate: "2026-04-20",
+          endDate: "2026-04-22",
+          completedWorks: "Полная профилактика и настройка на стенде.",
+          hpfpParameters: [{ id: "whp-mock-14", name: "Подача: 90 мм3/такт" }],
+          remark: "",
+          installedParts: [
+            { id: "wlp-mock-14", name: "Ремкомплект", qty: 1 },
+            { id: "wlp-mock-15", name: "Прокладка", qty: 2 },
+          ],
+        },
+        {
+          id: "rwl-mock-13",
+          orgId: "rw-org-mock-5",
+          clientLastName: "Никитин",
+          clientPhone: "+7 (905) 771-22-11",
+          transportType: "Scania P340 · К335МВ68",
+          hpfpType: "Bosch CP3",
+          pumpNumber: "0 445 020 278",
+          startDate: "2026-04-23",
+          endDate: "2026-04-24",
+          completedWorks: "Проверка регулятора, калибровка подачи.",
+          hpfpParameters: [{ id: "whp-mock-15", name: "Пульсация в норме" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-16", name: "Клапан отсечки", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-14",
+          orgId: "rw-org-mock-5",
+          clientLastName: "Матвеев",
+          clientPhone: "+7 (910) 343-21-00",
+          transportType: "Iveco Daily · С556КХ68",
+          hpfpType: "Delphi DFP1",
+          pumpNumber: "R9044A060A",
+          startDate: "2026-04-25",
+          endDate: "2026-04-26",
+          completedWorks: "Замена изношенных элементов, контроль на стенде.",
+          hpfpParameters: [{ id: "whp-mock-16", name: "Подача стабильна" }],
+          remark: "Проверить топливный фильтр через 2 недели.",
+          installedParts: [{ id: "wlp-mock-17", name: "Ремкомплект секции", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-15",
+          orgId: "rw-org-mock-6",
+          clientLastName: "Волков",
+          clientPhone: "+7 (920) 111-80-81",
+          transportType: "DAF XF 105 · Р190ЕТ68",
+          hpfpType: "Bosch CP4",
+          pumpNumber: "0 445 020 432",
+          startDate: "2026-04-27",
+          endDate: "2026-04-28",
+          completedWorks: "Чистка системы, восстановление давления.",
+          hpfpParameters: [{ id: "whp-mock-17", name: "Давление: 1450 бар" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-18", name: "Седло клапана", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-16",
+          orgId: "rw-org-mock-6",
+          clientLastName: "Романов",
+          clientPhone: "+7 (930) 777-00-21",
+          transportType: "КамАЗ 5490 · Х770АО68",
+          hpfpType: "Bosch CP3",
+          pumpNumber: "0 445 020 074",
+          startDate: "2026-04-29",
+          endDate: "2026-04-30",
+          completedWorks: "Диагностика и регулировка производительности секций.",
+          hpfpParameters: [{ id: "whp-mock-18", name: "Секции синхронизированы" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-19", name: "Втулка секции", qty: 2 }],
+        },
+        {
+          id: "rwl-mock-17",
+          orgId: "rw-org-mock-6",
+          clientLastName: "Громов",
+          clientPhone: "+7 (953) 200-11-45",
+          transportType: "МТЗ-1221 · 68ТК5566",
+          hpfpType: "ЯЗДА",
+          pumpNumber: "773.1111005-20",
+          startDate: "2026-05-01",
+          endDate: "2026-05-03",
+          completedWorks: "Переборка узла привода и регулировка опережения.",
+          hpfpParameters: [{ id: "whp-mock-19", name: "Опережение: 22°" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-20", name: "Пружина регулятора", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-18",
+          orgId: "rw-org-mock-6",
+          clientLastName: "Алексеев",
+          clientPhone: "+7 (901) 512-77-90",
+          transportType: "JCB 3CX · Е445УМ68",
+          hpfpType: "Denso HP4",
+          pumpNumber: "294050-0420",
+          startDate: "2026-05-04",
+          endDate: "2026-05-05",
+          completedWorks: "Ремонт дозирующего узла, промывка системы.",
+          hpfpParameters: [{ id: "whp-mock-20", name: "Подача: 84 мм3/такт" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-21", name: "Дозирующий клапан", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-19",
+          orgId: "rw-org-mock-6",
+          clientLastName: "Титов",
+          clientPhone: "+7 (902) 654-10-10",
+          transportType: "Урал 4320 · О901КМ68",
+          hpfpType: "Motorpal",
+          pumpNumber: "PP4M10P1f",
+          startDate: "2026-05-06",
+          endDate: "2026-05-08",
+          completedWorks: "Стендовые испытания, замена уплотнений и регулировка.",
+          hpfpParameters: [{ id: "whp-mock-21", name: "Течь отсутствует" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-22", name: "Уплотнение", qty: 3 }],
+        },
+        {
+          id: "rwl-mock-20",
+          orgId: "rw-org-mock-6",
+          clientLastName: "Белов",
+          clientPhone: "+7 (915) 330-22-44",
+          transportType: "MAN TGX · С990ОР68",
+          hpfpType: "Bosch CP3",
+          pumpNumber: "0 445 020 311",
+          startDate: "2026-05-09",
+          endDate: "2026-05-10",
+          completedWorks: "Настройка ТНВД после замены распредвала насоса.",
+          hpfpParameters: [{ id: "whp-mock-22", name: "Баланс секций в норме" }],
+          remark: "Проверить через 1 500 км.",
+          installedParts: [{ id: "wlp-mock-23", name: "Подшипник вала", qty: 1 }],
+        },
+        {
+          id: "rwl-mock-21",
+          orgId: "rw-org-mock-6",
+          clientLastName: "Лаптев",
+          clientPhone: "+7 (999) 221-44-88",
+          transportType: "Volvo FM · У330ЕР68",
+          hpfpType: "Delphi DFP3",
+          pumpNumber: "R9044Z215A",
+          startDate: "2026-05-11",
+          endDate: "2026-05-12",
+          completedWorks: "Полный цикл диагностики, корректировка подачи топлива.",
+          hpfpParameters: [{ id: "whp-mock-23", name: "Подача: 93 мм3/такт" }],
+          remark: "",
+          installedParts: [{ id: "wlp-mock-24", name: "Регулятор подачи", qty: 1 }],
+        },
+      ];
+
+      const firstOrgId = mockOrganizations[0].id;
+      setWorkLogOrganizations(mockOrganizations);
+      setWorkLogEntries(mockEntries);
+      setSelectedWorkLogSettlementId(firstOrgId);
+      setWorkLogDraft(makeEmptyWorkLogDraft(firstOrgId));
+      setWorkLogPartDraft({ name: "", qty: "1" });
+      setWorkLogHpfpParamDraft({ name: "" });
+      setWorkLogTableFilterTransport("");
+      setWorkLogTableFilterHpfpType("");
+      setWorkLogTableFilterPumpNumber("");
+      setWorkLogModalOpen(false);
+      setWorkLogAddOrgModalOpen(false);
+      setWorkLogEditingId(null);
+      setWorkLogNewOrg({ shortName: "" });
+      setWorkLogClientLastNameMissing(false);
+      mockModeEnabledRef.current = true;
+    };
+
+    window.addEventListener("fuel-systems:load-mock", handleLoadMock);
+    return () => {
+      window.removeEventListener("fuel-systems:load-mock", handleLoadMock);
+    };
+  }, [selectedWorkLogSettlementId, workLogEntries, workLogOrganizations]);
 
   useEffect(() => {
     if (skipNextPersist.current) {
