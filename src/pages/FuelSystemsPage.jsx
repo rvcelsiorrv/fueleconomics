@@ -1015,10 +1015,10 @@ export default function FuelSystemsPage() {
       },
       {
         key: "transportType",
-        header: "Тип транспорта",
+        header: "Тип ТС",
         headerClassName: workLogTableHeaderClassName,
         cellClassName:
-          "min-w-[14rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200",
+          "min-w-[6rem] max-w-[7.5rem] px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200",
         render: (entry) => (entry.transportType ?? "").trim() || "—",
       },
       {
@@ -1026,7 +1026,7 @@ export default function FuelSystemsPage() {
         header: "Тип ТНВД",
         headerClassName: workLogTableHeaderClassName,
         cellClassName:
-          "min-w-[11rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200",
+          "min-w-[7.5rem] max-w-[9rem] px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200",
         render: (entry) => (entry.hpfpType ?? "").trim() || "—",
       },
       {
@@ -1034,7 +1034,7 @@ export default function FuelSystemsPage() {
         header: "Номер ТНВД",
         headerClassName: workLogTableHeaderClassName,
         cellClassName:
-          "min-w-[10rem] px-3 py-2.5 align-top text-[0.8rem] tabular-nums text-zinc-900 dark:text-zinc-200",
+          "min-w-[6.5rem] max-w-[8rem] px-3 py-2.5 align-top text-[0.8rem] tabular-nums text-zinc-900 dark:text-zinc-200",
         render: (entry) => normalizePumpNumberFromEntry(entry) || "—",
       },
       {
@@ -1058,7 +1058,7 @@ export default function FuelSystemsPage() {
         header: "Выполненные работы",
         headerClassName: workLogTableHeaderClassName,
         cellClassName:
-          "min-w-[12rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200",
+          "min-w-[12rem] max-w-xs !h-auto !max-h-none !overflow-visible !whitespace-normal !text-clip break-words px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-900 dark:text-zinc-200",
         render: (entry) => entry.completedWorks.trim() || "—",
       },
       {
@@ -1110,7 +1110,7 @@ export default function FuelSystemsPage() {
         header: "Примечание",
         headerClassName: workLogTableHeaderClassName,
         cellClassName:
-          "min-w-[10rem] max-w-xs px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-500 dark:text-zinc-400",
+          "min-w-[10rem] max-w-xs !h-auto !max-h-none !overflow-visible !whitespace-normal !text-clip break-words px-3 py-2.5 align-top text-[0.8rem] leading-snug text-zinc-500 dark:text-zinc-400",
         render: (entry) => (entry.remark ?? "").trim() || "—",
       },
       {
