@@ -6,6 +6,7 @@ import {
   InputNumber,
   Modal,
   Select,
+  Tooltip,
 } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -232,17 +233,23 @@ export default function FuelSystemsPage() {
         const restoredOrganizations = Array.isArray(backup.organizations)
           ? backup.organizations
           : [];
-        const restoredEntries = Array.isArray(backup.entries) ? backup.entries : [];
+        const restoredEntries = Array.isArray(backup.entries)
+          ? backup.entries
+          : [];
         const restoredSelectedSettlementId =
           backup.selectedSettlementId &&
-          restoredOrganizations.some((o) => o.id === backup.selectedSettlementId)
+          restoredOrganizations.some(
+            (o) => o.id === backup.selectedSettlementId,
+          )
             ? backup.selectedSettlementId
-            : restoredOrganizations[0]?.id ?? null;
+            : (restoredOrganizations[0]?.id ?? null);
 
         setWorkLogOrganizations(restoredOrganizations);
         setWorkLogEntries(restoredEntries);
         setSelectedWorkLogSettlementId(restoredSelectedSettlementId);
-        setWorkLogDraft(makeEmptyWorkLogDraft(restoredSelectedSettlementId ?? ""));
+        setWorkLogDraft(
+          makeEmptyWorkLogDraft(restoredSelectedSettlementId ?? ""),
+        );
         setWorkLogPartDraft({ name: "", qty: "1" });
         setWorkLogHpfpParamDraft({ name: "" });
         setWorkLogTableFilterTransport("");
@@ -315,7 +322,9 @@ export default function FuelSystemsPage() {
           completedWorks: "Чистка, замер стендом, калибровка.",
           hpfpParameters: [{ id: "whp-mock-3", name: "Подача в норме" }],
           remark: "",
-          installedParts: [{ id: "wlp-mock-3", name: "Клапан дозатора", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-3", name: "Клапан дозатора", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-3",
@@ -328,9 +337,13 @@ export default function FuelSystemsPage() {
           startDate: "2026-04-10",
           endDate: "2026-04-12",
           completedWorks: "Переборка секций ТНВД, регулировка подачи.",
-          hpfpParameters: [{ id: "whp-mock-4", name: "Опережение впрыска: 24°" }],
+          hpfpParameters: [
+            { id: "whp-mock-4", name: "Опережение впрыска: 24°" },
+          ],
           remark: "Наблюдать за расходом топлива первую неделю.",
-          installedParts: [{ id: "wlp-mock-4", name: "Прокладка крышки", qty: 2 }],
+          installedParts: [
+            { id: "wlp-mock-4", name: "Прокладка крышки", qty: 2 },
+          ],
         },
         {
           id: "rwl-mock-4",
@@ -343,9 +356,13 @@ export default function FuelSystemsPage() {
           startDate: "2026-04-13",
           endDate: "2026-04-14",
           completedWorks: "Замена дозирующего клапана, проверка герметичности.",
-          hpfpParameters: [{ id: "whp-mock-5", name: "Тест герметичности пройден" }],
+          hpfpParameters: [
+            { id: "whp-mock-5", name: "Тест герметичности пройден" },
+          ],
           remark: "",
-          installedParts: [{ id: "wlp-mock-5", name: "Дозирующий клапан", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-5", name: "Дозирующий клапан", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-5",
@@ -378,10 +395,13 @@ export default function FuelSystemsPage() {
           pumpNumber: "DB4-9933",
           startDate: "2026-04-19",
           endDate: "2026-04-20",
-          completedWorks: "Промывка, замена уплотнений, настройка холостого хода.",
+          completedWorks:
+            "Промывка, замена уплотнений, настройка холостого хода.",
           hpfpParameters: [{ id: "whp-mock-8", name: "ХХ стабилен" }],
           remark: "",
-          installedParts: [{ id: "wlp-mock-8", name: "Комплект уплотнений", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-8", name: "Комплект уплотнений", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-7",
@@ -409,9 +429,13 @@ export default function FuelSystemsPage() {
           startDate: "2026-04-06",
           endDate: "2026-04-09",
           completedWorks: "Очистка системы, замена топливного регулятора.",
-          hpfpParameters: [{ id: "whp-mock-10", name: "Режим работы стабилен" }],
+          hpfpParameters: [
+            { id: "whp-mock-10", name: "Режим работы стабилен" },
+          ],
           remark: "",
-          installedParts: [{ id: "wlp-mock-10", name: "Регулятор давления", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-10", name: "Регулятор давления", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-9",
@@ -426,7 +450,9 @@ export default function FuelSystemsPage() {
           completedWorks: "Ремонт привода ТНВД, стендовые испытания.",
           hpfpParameters: [{ id: "whp-mock-11", name: "Подача в допуске" }],
           remark: "",
-          installedParts: [{ id: "wlp-mock-11", name: "Втулка привода", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-11", name: "Втулка привода", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-10",
@@ -439,9 +465,13 @@ export default function FuelSystemsPage() {
           startDate: "2026-04-14",
           endDate: "2026-04-16",
           completedWorks: "Диагностика, замена плунжерной пары, калибровка.",
-          hpfpParameters: [{ id: "whp-mock-12", name: "Отклонений не выявлено" }],
+          hpfpParameters: [
+            { id: "whp-mock-12", name: "Отклонений не выявлено" },
+          ],
           remark: "Контрольный осмотр через 10 дней.",
-          installedParts: [{ id: "wlp-mock-12", name: "Плунжерная пара", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-12", name: "Плунжерная пара", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-11",
@@ -456,7 +486,9 @@ export default function FuelSystemsPage() {
           completedWorks: "Регулировка секций и угла опережения.",
           hpfpParameters: [{ id: "whp-mock-13", name: "Угол: 23°" }],
           remark: "",
-          installedParts: [{ id: "wlp-mock-13", name: "Регулировочный винт", qty: 2 }],
+          installedParts: [
+            { id: "wlp-mock-13", name: "Регулировочный винт", qty: 2 },
+          ],
         },
         {
           id: "rwl-mock-12",
@@ -489,7 +521,9 @@ export default function FuelSystemsPage() {
           completedWorks: "Проверка регулятора, калибровка подачи.",
           hpfpParameters: [{ id: "whp-mock-15", name: "Пульсация в норме" }],
           remark: "",
-          installedParts: [{ id: "wlp-mock-16", name: "Клапан отсечки", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-16", name: "Клапан отсечки", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-14",
@@ -504,7 +538,9 @@ export default function FuelSystemsPage() {
           completedWorks: "Замена изношенных элементов, контроль на стенде.",
           hpfpParameters: [{ id: "whp-mock-16", name: "Подача стабильна" }],
           remark: "Проверить топливный фильтр через 2 недели.",
-          installedParts: [{ id: "wlp-mock-17", name: "Ремкомплект секции", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-17", name: "Ремкомплект секции", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-15",
@@ -519,7 +555,9 @@ export default function FuelSystemsPage() {
           completedWorks: "Чистка системы, восстановление давления.",
           hpfpParameters: [{ id: "whp-mock-17", name: "Давление: 1450 бар" }],
           remark: "",
-          installedParts: [{ id: "wlp-mock-18", name: "Седло клапана", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-18", name: "Седло клапана", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-16",
@@ -531,10 +569,15 @@ export default function FuelSystemsPage() {
           pumpNumber: "0 445 020 074",
           startDate: "2026-04-29",
           endDate: "2026-04-30",
-          completedWorks: "Диагностика и регулировка производительности секций.",
-          hpfpParameters: [{ id: "whp-mock-18", name: "Секции синхронизированы" }],
+          completedWorks:
+            "Диагностика и регулировка производительности секций.",
+          hpfpParameters: [
+            { id: "whp-mock-18", name: "Секции синхронизированы" },
+          ],
           remark: "",
-          installedParts: [{ id: "wlp-mock-19", name: "Втулка секции", qty: 2 }],
+          installedParts: [
+            { id: "wlp-mock-19", name: "Втулка секции", qty: 2 },
+          ],
         },
         {
           id: "rwl-mock-17",
@@ -549,7 +592,9 @@ export default function FuelSystemsPage() {
           completedWorks: "Переборка узла привода и регулировка опережения.",
           hpfpParameters: [{ id: "whp-mock-19", name: "Опережение: 22°" }],
           remark: "",
-          installedParts: [{ id: "wlp-mock-20", name: "Пружина регулятора", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-20", name: "Пружина регулятора", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-18",
@@ -564,7 +609,9 @@ export default function FuelSystemsPage() {
           completedWorks: "Ремонт дозирующего узла, промывка системы.",
           hpfpParameters: [{ id: "whp-mock-20", name: "Подача: 84 мм3/такт" }],
           remark: "",
-          installedParts: [{ id: "wlp-mock-21", name: "Дозирующий клапан", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-21", name: "Дозирующий клапан", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-19",
@@ -576,7 +623,8 @@ export default function FuelSystemsPage() {
           pumpNumber: "PP4M10P1f",
           startDate: "2026-05-06",
           endDate: "2026-05-08",
-          completedWorks: "Стендовые испытания, замена уплотнений и регулировка.",
+          completedWorks:
+            "Стендовые испытания, замена уплотнений и регулировка.",
           hpfpParameters: [{ id: "whp-mock-21", name: "Течь отсутствует" }],
           remark: "",
           installedParts: [{ id: "wlp-mock-22", name: "Уплотнение", qty: 3 }],
@@ -592,9 +640,13 @@ export default function FuelSystemsPage() {
           startDate: "2026-05-09",
           endDate: "2026-05-10",
           completedWorks: "Настройка ТНВД после замены распредвала насоса.",
-          hpfpParameters: [{ id: "whp-mock-22", name: "Баланс секций в норме" }],
+          hpfpParameters: [
+            { id: "whp-mock-22", name: "Баланс секций в норме" },
+          ],
           remark: "Проверить через 1 500 км.",
-          installedParts: [{ id: "wlp-mock-23", name: "Подшипник вала", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-23", name: "Подшипник вала", qty: 1 },
+          ],
         },
         {
           id: "rwl-mock-21",
@@ -606,10 +658,13 @@ export default function FuelSystemsPage() {
           pumpNumber: "R9044Z215A",
           startDate: "2026-05-11",
           endDate: "2026-05-12",
-          completedWorks: "Полный цикл диагностики, корректировка подачи топлива.",
+          completedWorks:
+            "Полный цикл диагностики, корректировка подачи топлива.",
           hpfpParameters: [{ id: "whp-mock-23", name: "Подача: 93 мм3/такт" }],
           remark: "",
-          installedParts: [{ id: "wlp-mock-24", name: "Регулятор подачи", qty: 1 }],
+          installedParts: [
+            { id: "wlp-mock-24", name: "Регулятор подачи", qty: 1 },
+          ],
         },
       ];
 
@@ -989,27 +1044,35 @@ export default function FuelSystemsPage() {
         headerClassName: workLogTableHeaderClassName,
         cellClassName:
           "align-top px-3 py-2.5 font-semibold text-zinc-900 dark:text-zinc-100",
-        render: (entry) => (entry.clientLastName ?? "").trim() || "—",
-      },
-      {
-        key: "clientPhone",
-        header: "Телефон клиента",
-        headerClassName: workLogTableHeaderClassName,
-        cellClassName:
-          "min-w-[9.5rem] whitespace-nowrap px-3 py-2.5 align-top text-[0.8rem] tabular-nums text-zinc-900 dark:text-zinc-200",
         render: (entry) => {
+          const lastName = (entry.clientLastName ?? "").trim();
+          if (!lastName) return "—";
+
           const clientPhoneRaw = String(entry.clientPhone ?? "").trim();
-          if (!clientPhoneRaw) return "—";
+          if (!clientPhoneRaw) return lastName;
+
           const clientTelHref = phoneToTelHref(clientPhoneRaw);
-          return clientTelHref ? (
+          const title = clientTelHref ? (
             <a
               className="text-blue-700 no-underline hover:underline dark:text-blue-400"
               href={clientTelHref}
+              onClick={(e) => e.stopPropagation()}
             >
               {clientPhoneRaw}
             </a>
           ) : (
             clientPhoneRaw
+          );
+
+          return (
+            <Tooltip
+              title={title}
+              placement="top"
+              color="#fff"
+              overlayInnerStyle={{ color: "rgba(0, 0, 0, 0.88)" }}
+            >
+              <span className="cursor-help">{lastName}</span>
+            </Tooltip>
           );
         },
       },
@@ -1037,17 +1100,17 @@ export default function FuelSystemsPage() {
           "min-w-[6.5rem] max-w-[8rem] px-3 py-2.5 align-top text-[0.8rem] tabular-nums text-zinc-900 dark:text-zinc-200",
         render: (entry) => normalizePumpNumberFromEntry(entry) || "—",
       },
-      {
-        key: "startDate",
-        header: "Начало",
-        headerClassName: workLogTableHeaderClassName,
-        cellClassName:
-          "whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-zinc-900 dark:text-zinc-200",
-        render: (entry) => formatDateRu(entry.startDate),
-      },
+      // {
+      //   key: "startDate",
+      //   header: "Начало",
+      //   headerClassName: workLogTableHeaderClassName,
+      //   cellClassName:
+      //     "whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-zinc-900 dark:text-zinc-200",
+      //   render: (entry) => formatDateRu(entry.startDate),
+      // },
       {
         key: "endDate",
-        header: "Окончание",
+        header: "Дата выдачи",
         headerClassName: workLogTableHeaderClassName,
         cellClassName:
           "whitespace-nowrap px-3 py-2.5 align-top tabular-nums text-zinc-900 dark:text-zinc-200",
