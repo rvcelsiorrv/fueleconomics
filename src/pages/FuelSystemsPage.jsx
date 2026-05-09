@@ -26,6 +26,12 @@ import {
   loadRepairWorkLogState,
   saveRepairWorkLogState,
 } from "../lib/repairWorkLogStorage";
+import tn1 from "../assets/tn1.jpg";
+import tn2 from "../assets/tn2.webp";
+import tn3 from "../assets/tn3.jpg";
+import tn4 from "../assets/tn4.jpg";
+
+const fuelSystemHeroImages = [tn1, tn2, tn3, tn4];
 
 function makeRepairWorkLogId() {
   return `rwl-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -118,11 +124,36 @@ function normalizeLoadedOrganization(raw) {
   if (!raw || typeof raw !== "object") return null;
   const id = String(raw.id ?? "").trim();
   if (!id) return null;
+  const orderNumberRaw = parseInt(String(raw.orderNumber ?? ""), 10);
   return {
     id,
     shortName: String(raw.shortName ?? "").trim(),
     phone: String(raw.phone ?? "").trim(),
+    orderNumber: Number.isFinite(orderNumberRaw) && orderNumberRaw > 0
+      ? orderNumberRaw
+      : null,
   };
+}
+
+function assignOrganizationOrderNumbers(organizations) {
+  const used = new Set();
+  const withNormalizedNumbers = organizations.map((org) => {
+    const parsed = parseInt(String(org?.orderNumber ?? ""), 10);
+    const valid = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    if (valid != null && !used.has(valid)) {
+      used.add(valid);
+      return { ...org, orderNumber: valid };
+    }
+    return { ...org, orderNumber: null };
+  });
+
+  let next = 1;
+  return withNormalizedNumbers.map((org) => {
+    if (org.orderNumber != null) return org;
+    while (used.has(next)) next += 1;
+    used.add(next);
+    return { ...org, orderNumber: next++ };
+  });
 }
 
 function normalizeLoadedPart(p, i) {
@@ -169,9 +200,9 @@ function normalizeLoadedEntry(raw) {
 function buildInitialStateFromStorage() {
   const { organizations: rawOrgs, entries: rawEntries } =
     loadRepairWorkLogState();
-  const organizations = rawOrgs
-    .map((o) => normalizeLoadedOrganization(o))
-    .filter(Boolean);
+  const organizations = assignOrganizationOrderNumbers(
+    rawOrgs.map((o) => normalizeLoadedOrganization(o)).filter(Boolean),
+  );
   const entries = rawEntries.map(normalizeLoadedEntry).filter(Boolean);
   return { organizations, entries };
 }
@@ -202,7 +233,11 @@ export default function FuelSystemsPage() {
 
   const [workLogModalOpen, setWorkLogModalOpen] = useState(false);
   const [workLogAddOrgModalOpen, setWorkLogAddOrgModalOpen] = useState(false);
+  const [workLogSettlementsModalOpen, setWorkLogSettlementsModalOpen] =
+    useState(false);
   const [workLogNewOrg, setWorkLogNewOrg] = useState({ shortName: "" });
+  const [workLogSettlementsDraft, setWorkLogSettlementsDraft] = useState([]);
+  const [draggingSettlementId, setDraggingSettlementId] = useState(null);
   const [workLogEditingId, setWorkLogEditingId] = useState(null);
   const [workLogDraft, setWorkLogDraft] = useState(() =>
     makeEmptyWorkLogDraft(initialStored.organizations[0]?.id ?? ""),
@@ -244,7 +279,7 @@ export default function FuelSystemsPage() {
             ? backup.selectedSettlementId
             : (restoredOrganizations[0]?.id ?? null);
 
-        setWorkLogOrganizations(restoredOrganizations);
+        setWorkLogOrganizations(assignOrganizationOrderNumbers(restoredOrganizations));
         setWorkLogEntries(restoredEntries);
         setSelectedWorkLogSettlementId(restoredSelectedSettlementId);
         setWorkLogDraft(
@@ -279,12 +314,12 @@ export default function FuelSystemsPage() {
       };
 
       const mockOrganizations = [
-        { id: "rw-org-mock-1", shortName: "Савоськин", phone: "" },
-        { id: "rw-org-mock-2", shortName: "Борисовка", phone: "" },
-        { id: "rw-org-mock-3", shortName: "Котовск", phone: "" },
-        { id: "rw-org-mock-4", shortName: "Моршанск", phone: "" },
-        { id: "rw-org-mock-5", shortName: "Рассказово", phone: "" },
-        { id: "rw-org-mock-6", shortName: "Уварово", phone: "" },
+        { id: "rw-org-mock-1", shortName: "Савоськин", phone: "", orderNumber: 1 },
+        { id: "rw-org-mock-2", shortName: "Борисовка", phone: "", orderNumber: 2 },
+        { id: "rw-org-mock-3", shortName: "Котовск", phone: "", orderNumber: 3 },
+        { id: "rw-org-mock-4", shortName: "Моршанск", phone: "", orderNumber: 4 },
+        { id: "rw-org-mock-5", shortName: "Рассказово", phone: "", orderNumber: 5 },
+        { id: "rw-org-mock-6", shortName: "Уварово", phone: "", orderNumber: 6 },
       ];
 
       const mockEntries = [
@@ -669,7 +704,7 @@ export default function FuelSystemsPage() {
       ];
 
       const firstOrgId = mockOrganizations[0].id;
-      setWorkLogOrganizations(mockOrganizations);
+      setWorkLogOrganizations(assignOrganizationOrderNumbers(mockOrganizations));
       setWorkLogEntries(mockEntries);
       setSelectedWorkLogSettlementId(firstOrgId);
       setWorkLogDraft(makeEmptyWorkLogDraft(firstOrgId));
@@ -758,10 +793,24 @@ export default function FuelSystemsPage() {
 
   const workLogOrgStatsSorted = useMemo(
     () =>
-      [...workLogOrgStats].sort((a, b) =>
-        a.shortName.localeCompare(b.shortName, "ru"),
+      [...workLogOrgStats].sort(
+        (a, b) =>
+          (a.orderNumber ?? Number.MAX_SAFE_INTEGER) -
+            (b.orderNumber ?? Number.MAX_SAFE_INTEGER) ||
+          a.shortName.localeCompare(b.shortName, "ru"),
       ),
     [workLogOrgStats],
+  );
+
+  const workLogOrganizationsSorted = useMemo(
+    () =>
+      [...workLogOrganizations].sort(
+        (a, b) =>
+          (a.orderNumber ?? Number.MAX_SAFE_INTEGER) -
+            (b.orderNumber ?? Number.MAX_SAFE_INTEGER) ||
+          a.shortName.localeCompare(b.shortName, "ru"),
+      ),
+    [workLogOrganizations],
   );
 
   const workLogEntriesForSelectedSettlement = useMemo(() => {
@@ -896,8 +945,21 @@ export default function FuelSystemsPage() {
     setWorkLogModalOpen(false);
     setWorkLogEditingId(null);
     setWorkLogAddOrgModalOpen(false);
+    setWorkLogSettlementsModalOpen(false);
+    setWorkLogSettlementsDraft([]);
     setWorkLogNewOrg({ shortName: "" });
     setWorkLogClientLastNameMissing(false);
+  };
+
+  const getNextOrganizationOrderNumber = (organizations) => {
+    const used = new Set(
+      organizations
+        .map((org) => parseInt(String(org.orderNumber ?? ""), 10))
+        .filter((n) => Number.isFinite(n) && n > 0),
+    );
+    let next = 1;
+    while (used.has(next)) next += 1;
+    return next;
   };
 
   const openWorkLogAddOrgModal = () => {
@@ -913,15 +975,109 @@ export default function FuelSystemsPage() {
   const submitWorkLogNewOrg = () => {
     const shortName = workLogNewOrg.shortName.trim();
     if (!shortName) return;
+    const orderNumber = getNextOrganizationOrderNumber(workLogOrganizations);
     const newOrg = {
       id: `rw-org-${Date.now()}`,
       shortName,
       phone: "",
+      orderNumber,
     };
     setWorkLogOrganizations((prev) => [...prev, newOrg]);
     setWorkLogDraft((d) => ({ ...d, orgId: newOrg.id }));
     setSelectedWorkLogSettlementId(newOrg.id);
     closeWorkLogAddOrgModal();
+  };
+
+  const openWorkLogSettlementsModal = () => {
+    setWorkLogSettlementsDraft(
+      normalizeSettlementDraftOrder(
+        workLogOrganizationsSorted.map((org) => ({
+          id: org.id,
+          shortName: org.shortName,
+          phone: org.phone ?? "",
+          orderNumber: org.orderNumber ?? 1,
+        })),
+      ),
+    );
+    setWorkLogSettlementsModalOpen(true);
+  };
+
+  const closeWorkLogSettlementsModal = () => {
+    setWorkLogSettlementsModalOpen(false);
+    setWorkLogSettlementsDraft([]);
+    setDraggingSettlementId(null);
+  };
+
+  const updateWorkLogSettlementDraftField = (id, field, value) => {
+    setWorkLogSettlementsDraft((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
+    );
+  };
+
+  const normalizeSettlementDraftOrder = (rows) =>
+    rows.map((row, index) => ({
+      ...row,
+      orderNumber: index + 1,
+    }));
+
+  const addWorkLogSettlementDraftRow = () => {
+    setWorkLogSettlementsDraft((prev) => [
+      ...prev,
+      {
+        id: `rw-org-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        shortName: "",
+        phone: "",
+        orderNumber: prev.length + 1,
+      },
+    ]);
+  };
+
+  const removeWorkLogSettlementDraftRow = (id) => {
+    setWorkLogSettlementsDraft((prev) =>
+      normalizeSettlementDraftOrder(prev.filter((row) => row.id !== id)),
+    );
+  };
+
+  const moveWorkLogSettlementDraftRow = (sourceId, targetId) => {
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    setWorkLogSettlementsDraft((prev) => {
+      const fromIndex = prev.findIndex((row) => row.id === sourceId);
+      const toIndex = prev.findIndex((row) => row.id === targetId);
+      if (fromIndex < 0 || toIndex < 0) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return normalizeSettlementDraftOrder(next);
+    });
+  };
+
+  const submitWorkLogSettlementsModal = () => {
+    if (workLogSettlementsDraft.length === 0) return;
+
+    for (const row of workLogSettlementsDraft) {
+      const shortName = String(row.shortName ?? "").trim();
+      if (!shortName) return;
+    }
+
+    const validOrgIds = new Set(workLogSettlementsDraft.map((row) => row.id));
+    const normalized = assignOrganizationOrderNumbers(
+      workLogSettlementsDraft.map((row) => ({
+        id: row.id,
+        shortName: String(row.shortName ?? "").trim(),
+        phone: String(row.phone ?? "").trim(),
+        orderNumber: parseInt(String(row.orderNumber ?? ""), 10) || 0,
+      })),
+    );
+    setWorkLogEntries((prev) => prev.filter((row) => validOrgIds.has(row.orgId)));
+    setSelectedWorkLogSettlementId((cur) =>
+      cur && validOrgIds.has(cur) ? cur : (normalized[0]?.id ?? null),
+    );
+    setWorkLogDraft((draft) => {
+      if (!draft.orgId || validOrgIds.has(draft.orgId)) return draft;
+      return { ...draft, orgId: normalized[0]?.id ?? "" };
+    });
+    setWorkLogOrganizations(normalized);
+    closeWorkLogSettlementsModal();
   };
 
   const addWorkLogDraftPart = () => {
@@ -1267,15 +1423,49 @@ export default function FuelSystemsPage() {
     workLogEntriesForSelectedSettlement.length === 0
       ? "По этому населённому пункту заявок пока нет. Нажмите «Добавить карточку»."
       : "Нет записей с выбранными фильтрами. Измените условия или нажмите «Сбросить фильтры».";
+  const workLogSettlementsDraftHasErrors = useMemo(() => {
+    if (workLogSettlementsDraft.length === 0) return true;
+    for (const row of workLogSettlementsDraft) {
+      const name = String(row.shortName ?? "").trim();
+      if (!name) return true;
+    }
+    return false;
+  }, [workLogSettlementsDraft]);
+
   return (
     <div className="box-border w-full max-w-none px-3 pb-14 pt-7 text-start sm:px-5">
+      <section className="mb-8" aria-label="Фотографии топливных систем">
+        <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_8px_22px_rgb(15_23_42/0.08)] dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="grid h-[136px] grid-cols-4 gap-px bg-zinc-200 dark:bg-zinc-700 sm:h-[156px]">
+            {fuelSystemHeroImages.map((src, index) => (
+              <div
+                key={`fuel-system-photo-${index}`}
+                className="flex h-full w-full items-center justify-center bg-white dark:bg-zinc-900"
+              >
+                <img
+                  src={src}
+                  alt={`Топливная система ${index + 1}`}
+                  className="border-2 border-[#0D9488] p-2 rounded-[20px] block h-1/2 w-1/2 object-contain object-center mt-[-40px]"
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="mb-10" aria-labelledby="hpfp-orgs-title">
-        <h2
-          id="hpfp-orgs-title"
-          className="mb-2 border-b border-zinc-200 pb-2 text-[1.0625rem] font-semibold tracking-tight text-zinc-900 dark:border-zinc-700 dark:text-zinc-50"
-        >
-          Учёт по населённым пунктам
-        </h2>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 pb-2 dark:border-zinc-700">
+          <h2
+            id="hpfp-orgs-title"
+            className="m-0 text-[1.0625rem] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+          >
+            Учёт по населённым пунктам
+          </h2>
+          <Button onClick={openWorkLogSettlementsModal}>
+            Список населенных пунктов
+          </Button>
+        </div>
         <div className="flex flex-wrap gap-4">
           {workLogOrgStatsSorted.length === 0 ? (
             <div className="w-full rounded-lg border border-dashed border-zinc-300 bg-zinc-50/80 px-4 py-5 text-center text-sm text-zinc-600 dark:border-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-400">
@@ -1304,7 +1494,7 @@ export default function FuelSystemsPage() {
                 onClick={() => selectWorkLogSettlement(o.id)}
               >
                 <h3 className="mb-3 break-words text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {o.shortName}
+                  {`${o.orderNumber}. ${o.shortName}`}
                 </h3>
                 <dl className="m-0 flex flex-wrap gap-x-6 gap-y-2 border-t border-zinc-200/80 pt-3 dark:border-zinc-700">
                   <div className="flex flex-col gap-0.5">
@@ -1492,9 +1682,9 @@ export default function FuelSystemsPage() {
                     className="w-full"
                     value={workLogDraft.orgId}
                     onChange={(v) => setWorkLogDraftField("orgId", v)}
-                    options={workLogOrganizations.map((o) => ({
+                    options={workLogOrganizationsSorted.map((o) => ({
                       value: o.id,
-                      label: o.shortName,
+                      label: `${o.orderNumber}. ${o.shortName}`,
                     }))}
                   />
                 </div>
@@ -1799,6 +1989,96 @@ export default function FuelSystemsPage() {
               rows={3}
             />
           </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={workLogSettlementsModalOpen}
+        onCancel={closeWorkLogSettlementsModal}
+        title="Список населенных пунктов"
+        width={760}
+        zIndex={1110}
+        centered
+        classNames={{ body: "app-scrollbar" }}
+        styles={{
+          body: {
+            paddingTop: 8,
+            paddingBottom: 8,
+          },
+          mask: { backdropFilter: "blur(4px)" },
+        }}
+        footer={
+          <div className="flex flex-wrap justify-between gap-3">
+            <Button onClick={addWorkLogSettlementDraftRow}>
+              Добавить населенный пункт
+            </Button>
+            <div className="flex flex-wrap justify-end gap-3">
+              <Button onClick={closeWorkLogSettlementsModal}>Отмена</Button>
+              <Button
+                type="primary"
+                onClick={submitWorkLogSettlementsModal}
+                disabled={workLogSettlementsDraftHasErrors}
+              >
+                Сохранить
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <p className={`${modalIntro} mb-4`}>
+          Перетаскивайте строки, чтобы менять номер пункта. Номер формируется по
+          позиции в списке.
+        </p>
+        <div className="space-y-3">
+          {workLogSettlementsDraft.map((row, index) => (
+            <div
+              key={row.id}
+              className={[
+                "grid grid-cols-1 gap-3 rounded-lg border border-zinc-200 p-3 sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] dark:border-zinc-700",
+                draggingSettlementId === row.id
+                  ? "opacity-60"
+                  : "opacity-100",
+              ].join(" ")}
+              draggable
+              onDragStart={() => setDraggingSettlementId(row.id)}
+              onDragEnd={() => setDraggingSettlementId(null)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                moveWorkLogSettlementDraftRow(draggingSettlementId, row.id);
+                setDraggingSettlementId(null);
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="inline-flex min-w-10 items-center justify-center rounded-md border border-zinc-300 px-2 py-1 text-sm font-semibold tabular-nums text-zinc-700 dark:border-zinc-600 dark:text-zinc-200">
+                  {index + 1}
+                </span>
+                <Button type="text" className="px-2" title="Перетащить">
+                  <span aria-hidden="true">⋮⋮</span>
+                </Button>
+              </div>
+
+              <Input
+                placeholder="Название населенного пункта"
+                value={row.shortName}
+                onChange={(e) =>
+                  updateWorkLogSettlementDraftField(
+                    row.id,
+                    "shortName",
+                    e.target.value,
+                  )
+                }
+              />
+
+              <Button
+                danger
+                onClick={() => removeWorkLogSettlementDraftRow(row.id)}
+                disabled={workLogSettlementsDraft.length <= 1}
+              >
+                Удалить
+              </Button>
+            </div>
+          ))}
         </div>
       </Modal>
 
