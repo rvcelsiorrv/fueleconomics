@@ -1269,25 +1269,6 @@ export default function FuelSystemsPage() {
       : "Нет записей с выбранными фильтрами. Измените условия или нажмите «Сбросить фильтры».";
   return (
     <div className="box-border w-full max-w-none px-3 pb-14 pt-7 text-start sm:px-5">
-      <header className="relative mb-9 overflow-hidden rounded-[10px] border border-zinc-200 bg-white shadow-sheet dark:border-zinc-700 dark:bg-zinc-900 sm:px-8 sm:py-7 px-5 py-6">
-        <div
-          className="absolute bottom-0 left-0 top-0 w-[3px] bg-blue-700 dark:bg-blue-500"
-          aria-hidden
-        />
-        <div className="relative pl-1">
-          <p className="mb-2.5 text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">
-            Журнал ремонта · автопарк
-          </p>
-          <h1 className="mb-3 text-pretty text-[clamp(1.45rem,3.2vw,1.95rem)] font-semibold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50">
-            Топливные системы, расход и&nbsp;ТНВД
-          </h1>
-          <p className="max-w-prose text-pretty text-[0.98rem] leading-relaxed text-zinc-600 dark:text-zinc-400">
-            Журнал ремонта топливных систем по населённым пунктам. Данные
-            сохраняются в браузере (localStorage) на этом устройстве.
-          </p>
-        </div>
-      </header>
-
       <section className="mb-10" aria-labelledby="hpfp-orgs-title">
         <h2
           id="hpfp-orgs-title"
@@ -1295,12 +1276,6 @@ export default function FuelSystemsPage() {
         >
           Учёт по населённым пунктам
         </h2>
-        <p className="mb-5 max-w-prose text-pretty text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-          Населённые пункты из журнала: число заявок и уникальных номеров ТНВД.
-          Нажмите карточку — ниже появится журнал ремонта по этому пункту;
-          повторный клик по&nbsp;той же карточке снимает выбор и скрывает
-          журнал.
-        </p>
         <div className="flex flex-wrap gap-4">
           {workLogOrgStatsSorted.length === 0 ? (
             <div className="w-full rounded-lg border border-dashed border-zinc-300 bg-zinc-50/80 px-4 py-5 text-center text-sm text-zinc-600 dark:border-zinc-600 dark:bg-zinc-900/50 dark:text-zinc-400">
@@ -1366,14 +1341,6 @@ export default function FuelSystemsPage() {
           >
             Журнал ремонта топливных систем
           </h2>
-          <p className="mb-5 max-w-prose text-pretty text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-            Заявки по выбранному населённому пункту. Добавление и изменение
-            карточки — в модальном окне (кнопки «Добавить карточку» и
-            «Редактировать» в таблице). У каждой единицы транспорта в карточке
-            указывается один ТНВД и один его номер. Чтобы скрыть журнал, нажмите
-            ту же карточку пункта в&nbsp;блоке «Учёт по населённым пунктам» ещё
-            раз.
-          </p>
           <div className="mb-4 flex flex-wrap items-center gap-3 gap-x-5">
             <Button type="primary" onClick={openWorkLogModal}>
               Добавить карточку
