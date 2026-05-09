@@ -1646,8 +1646,16 @@ export default function FuelSystemsPage() {
         centered
         classNames={{ body: "app-scrollbar" }}
         styles={{
+          content: {
+            maxHeight: "90vh",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          },
           body: {
-            maxHeight: "min(90vh, 880px)",
+            flex: "1 1 auto",
+            minHeight: 0,
+            maxHeight: "calc(90vh - 180px)",
             overflowY: "auto",
             paddingTop: 12,
             paddingBottom: 12,
@@ -1990,6 +1998,7 @@ export default function FuelSystemsPage() {
             />
           </div>
         </div>
+
       </Modal>
 
       <Modal
